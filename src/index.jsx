@@ -16,15 +16,18 @@ export default function QueryBuilder({
 }) {
   // Pull named slots out of `sx` so callers can target individual parts of
   // the component, e.g. sx={{ root: {...}, popover: {...} }}.
-  // The `textBox` slot is itself a slot map forwarded to QueryTextBox.
+  // The `textBox` and `queryForm` slots are themselves slot maps forwarded
+  // to QueryTextBox and QueryForm respectively.
   const {
     root: rootSx,
     textBoxContainer: textBoxContainerSx,
     textBox: textBoxSx,
     iconButton: iconButtonSx,
     popover: popoverSx,
+    popoverPaper: popoverPaperSx,
     popoverContent: popoverContentSx,
     title: titleSx,
+    queryForm: queryFormSx,
   } = sx;
 
   const [anchorEl, setAnchorEl] = useState(null);
@@ -153,6 +156,7 @@ export default function QueryBuilder({
         // Constrain the floating paper so it never spills off-screen on
         // narrow viewports. `calc(100vw - 32px)` leaves a 16px gutter on each
         // side, and `maxHeight` + scroll lets long forms fit on short screens.
+        // Callers can override or extend any of these via `sx.popoverPaper`.
         slotProps={{
           paper: {
             sx: {
@@ -171,6 +175,7 @@ export default function QueryBuilder({
               maxHeight: "calc(100vh - 96px)",
               overflowY: "auto",
               boxSizing: "border-box",
+              ...popoverPaperSx,
             },
           },
         }}
@@ -187,6 +192,7 @@ export default function QueryBuilder({
             defaultOperators={defaultOperators}
             defaultValues={queries}
             defaultOperator={defaultOperator}
+            sx={queryFormSx}
           />
         </Box>
       </Popover>

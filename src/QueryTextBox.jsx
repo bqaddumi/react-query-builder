@@ -38,263 +38,382 @@ const DEFAULT_TOKEN_COLORS = {
   value: "inherit",
 };
 
+// Default font weights per token type. Callers can override any of these via
+// sx.tokenFontWeights to customize the visual emphasis of each token.
+const DEFAULT_TOKEN_FONT_WEIGHTS = {
+  column: 400,
+  customColumn: 400,
+  operator: 600,
+  unknownOperator: 400,
+  logical: 600,
+  value: 400,
+};
+
 const HINT_TEXT =
   'Type a query like: column operator value — e.g. name == "John"';
 
 // ---------------------------------------------------------------------------
 // HelpModal – standalone component so the JSX stays readable
 // ---------------------------------------------------------------------------
-const HelpModal = ({ open, onClose }) => (
-  <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth scroll="paper">
-    <DialogTitle sx={{ pr: 6 }}>
-      How to Use the Query Search
-      <IconButton
-        onClick={onClose}
-        size="small"
-        sx={{ position: "absolute", right: 12, top: 12 }}
-        aria-label="close"
-      >
-        <CloseIcon fontSize="small" />
-      </IconButton>
-    </DialogTitle>
+const HelpModal = ({ open, onClose, sx = {} }) => {
+  // Slot map: each key targets a specific element inside the help dialog so
+  // callers can override styles per-slot, e.g.
+  // sx={{ dialog: {...}, codeBlock: {...}, gotItButton: {...} }}.
+  const {
+    dialog: dialogSx,
+    title: titleSx,
+    closeButton: closeButtonSx,
+    content: contentSx,
+    sectionTitle: sectionTitleSx,
+    body: bodySx,
+    codeBlock: codeBlockSx,
+    exampleBlock: exampleBlockSx,
+    exampleLabel: exampleLabelSx,
+    list: listSx,
+    listItem: listItemSx,
+    chip: chipSx,
+    divider: dividerSx,
+    actions: actionsSx,
+    gotItButton: gotItButtonSx,
+    colorLegendItem: colorLegendItemSx,
+    colorSwatch: colorSwatchSx,
+    warningText: warningTextSx,
+  } = sx;
 
-    <DialogContent dividers>
-      {/* ── Overview ─────────────────────────────────────────────────── */}
-      <Typography variant="h6" gutterBottom>
-        Overview
-      </Typography>
-      <Typography variant="body2" paragraph>
-        The query search box lets you filter data using a simple, readable
-        query language. Type your conditions directly into the search field and
-        press <strong>Apply</strong> to run the query. Suggestions will appear
-        as you type to guide you through valid columns, operators, and logical
-        connectors.
-      </Typography>
+  return (
+    <Dialog
+      open={open}
+      onClose={onClose}
+      maxWidth="md"
+      fullWidth
+      scroll="paper"
+      sx={dialogSx}
+    >
+      <DialogTitle sx={{ pr: 6, ...titleSx }}>
+        How to Use the Query Search
+        <IconButton
+          onClick={onClose}
+          size="small"
+          sx={{ position: "absolute", right: 12, top: 12, ...closeButtonSx }}
+          aria-label="close"
+        >
+          <CloseIcon fontSize="small" />
+        </IconButton>
+      </DialogTitle>
 
-      <Divider sx={{ my: 2 }} />
-
-      {/* ── Basic Syntax ─────────────────────────────────────────────── */}
-      <Typography variant="h6" gutterBottom>
-        Basic Syntax
-      </Typography>
-      <Typography variant="body2" paragraph>
-        Every condition follows this pattern:
-      </Typography>
-      <Box
-        component="pre"
-        sx={{
-          bgcolor: "grey.100",
-          borderLeft: 4,
-          borderColor: "primary.main",
-          px: 2,
-          py: 1.5,
-          borderRadius: 1,
-          overflowX: "auto",
-          mb: 2,
-          fontFamily: "monospace",
-          fontSize: "0.875rem",
-        }}
-      >
-        {`column  operator  value`}
-      </Box>
-      <Typography variant="body2" paragraph>
-        Each part is separated by a single space:
-      </Typography>
-      <Box component="ul" sx={{ mt: 0, mb: 2, pl: 3 }}>
-        <Typography component="li" variant="body2" gutterBottom>
-          <strong>column</strong> — the field you want to filter on (e.g.{" "}
-          <Chip label="name" size="small" sx={{ fontFamily: "monospace" }} />
-          ,{" "}
-          <Chip label="duration" size="small" sx={{ fontFamily: "monospace" }} />
-          ).
+      <DialogContent dividers sx={contentSx}>
+        {/* ── Overview ─────────────────────────────────────────────────── */}
+        <Typography variant="h6" gutterBottom sx={sectionTitleSx}>
+          Overview
         </Typography>
-        <Typography component="li" variant="body2" gutterBottom>
-          <strong>operator</strong> — the comparison to apply (e.g.{" "}
-          <Chip label="==" size="small" sx={{ fontFamily: "monospace" }} />
-          ,{" "}
-          <Chip
-            label="contains"
-            size="small"
-            sx={{ fontFamily: "monospace" }}
-          />
-          ,{" "}
-          <Chip label=">" size="small" sx={{ fontFamily: "monospace" }} />
-          ).
+        <Typography variant="body2" paragraph sx={bodySx}>
+          The query search box lets you filter data using a simple, readable
+          query language. Type your conditions directly into the search field
+          and press <strong>Apply</strong> to run the query. Suggestions will
+          appear as you type to guide you through valid columns, operators,
+          and logical connectors.
         </Typography>
-        <Typography component="li" variant="body2" gutterBottom>
-          <strong>value</strong> — what you are comparing against. Wrap values
-          that contain spaces in double quotes:{" "}
-          <Chip
-            label={`"John Doe"`}
-            size="small"
-            sx={{ fontFamily: "monospace" }}
-          />
-          .
+
+        <Divider sx={{ my: 2, ...dividerSx }} />
+
+        {/* ── Basic Syntax ─────────────────────────────────────────────── */}
+        <Typography variant="h6" gutterBottom sx={sectionTitleSx}>
+          Basic Syntax
         </Typography>
-      </Box>
-
-      <Divider sx={{ my: 2 }} />
-
-      {/* ── Combining Conditions ─────────────────────────────────────── */}
-      <Typography variant="h6" gutterBottom>
-        Combining Conditions
-      </Typography>
-      <Typography variant="body2" paragraph>
-        Use <strong>AND</strong> or <strong>OR</strong> (uppercase) to join
-        multiple conditions:
-      </Typography>
-      <Box
-        component="pre"
-        sx={{
-          bgcolor: "grey.100",
-          borderLeft: 4,
-          borderColor: "primary.main",
-          px: 2,
-          py: 1.5,
-          borderRadius: 1,
-          overflowX: "auto",
-          mb: 2,
-          fontFamily: "monospace",
-          fontSize: "0.875rem",
-        }}
-      >
-        {`condition1 AND condition2 AND condition3
-condition1 OR  condition2`}
-      </Box>
-      <Typography variant="body2" sx={{ color: "error.main" }} paragraph>
-        ⚠ You cannot mix <strong>AND</strong> and <strong>OR</strong> in the
-        same query. Pick one logical operator and use it consistently.
-      </Typography>
-
-      <Divider sx={{ my: 2 }} />
-
-      {/* ── Examples ─────────────────────────────────────────────────── */}
-      <Typography variant="h6" gutterBottom>
-        Examples
-      </Typography>
-
-      {[
-        {
-          label: "Exact match",
-          code: `name == "Alice"`,
-        },
-        {
-          label: "Contains substring",
-          code: `name contains "ali"`,
-        },
-        {
-          label: "Numeric comparison",
-          code: `duration > 30`,
-        },
-        {
-          label: "Multiple conditions (AND)",
-          code: `name == "Alice" AND duration > 30`,
-        },
-        {
-          label: "Multiple conditions (OR)",
-          code: `status == active OR status == pending`,
-        },
-        {
-          label: "Date range",
-          code: `created_at after 2024-01-01 AND created_at before 2024-12-31`,
-        },
-      ].map(({ label, code }) => (
-        <Box key={label} mb={1.5}>
-          <Typography
-            variant="caption"
-            sx={{ color: "text.secondary", textTransform: "uppercase", letterSpacing: 0.5 }}
-          >
-            {label}
-          </Typography>
-          <Box
-            component="pre"
-            sx={{
-              bgcolor: "grey.50",
-              border: 1,
-              borderColor: "divider",
-              px: 2,
-              py: 1,
-              borderRadius: 1,
-              overflowX: "auto",
-              mt: 0.5,
-              fontFamily: "monospace",
-              fontSize: "0.875rem",
-            }}
-          >
-            {code}
-          </Box>
+        <Typography variant="body2" paragraph sx={bodySx}>
+          Every condition follows this pattern:
+        </Typography>
+        <Box
+          component="pre"
+          sx={{
+            bgcolor: "grey.100",
+            borderLeft: 4,
+            borderColor: "primary.main",
+            px: 2,
+            py: 1.5,
+            borderRadius: 1,
+            overflowX: "auto",
+            mb: 2,
+            fontFamily: "monospace",
+            fontSize: "0.875rem",
+            ...codeBlockSx,
+          }}
+        >
+          {`column  operator  value`}
         </Box>
-      ))}
-
-      <Divider sx={{ my: 2 }} />
-
-      {/* ── Tips ─────────────────────────────────────────────────────── */}
-      <Typography variant="h6" gutterBottom>
-        Tips
-      </Typography>
-      <Box component="ul" sx={{ mt: 0, mb: 1, pl: 3 }}>
-        {[
-          "Start typing a column name and select it from the suggestion list.",
-          "After picking a column, the suggestion list will show valid operators for that column.",
-          "After entering a value, AND / OR will appear in the suggestion list.",
-          'Wrap multi-word values in double quotes — e.g. "John Doe".',
-          "Syntax errors are highlighted in the text box. Hover the input to see the specific error.",
-          "You can also build queries using the advanced filter panel (click the ⊟ icon).",
-        ].map((tip) => (
-          <Typography key={tip} component="li" variant="body2" gutterBottom>
-            {tip}
-          </Typography>
-        ))}
-      </Box>
-
-      <Divider sx={{ my: 2 }} />
-
-      {/* ── Token Colors ─────────────────────────────────────────────── */}
-      <Typography variant="h6" gutterBottom>
-        Syntax Highlighting
-      </Typography>
-      <Typography variant="body2" paragraph>
-        As you type, each part of the query is colorized to help you spot
-        mistakes at a glance:
-      </Typography>
-      <Box component="ul" sx={{ mt: 0, mb: 1, pl: 3 }}>
-        {[
-          { color: "#1976d2", label: "Blue", desc: "Known column" },
-          { color: "#0288d1", label: "Light blue", desc: "Custom / unknown column" },
-          { color: "#d32f2f", label: "Red", desc: "Valid operator" },
-          { color: "#9e9e9e", label: "Grey", desc: "Unrecognized operator (still typing)" },
-          { color: "#7b1fa2", label: "Purple", desc: "Logical connector — AND / OR" },
-          { color: "inherit", label: "Default", desc: "Value" },
-        ].map(({ color, label, desc }) => (
-          <Typography key={label} component="li" variant="body2" gutterBottom>
-            <Box
-              component="span"
-              sx={{
-                display: "inline-block",
-                width: 12,
-                height: 12,
-                borderRadius: "50%",
-                bgcolor: color === "inherit" ? "text.primary" : color,
-                mr: 1,
-                verticalAlign: "middle",
-              }}
+        <Typography variant="body2" paragraph sx={bodySx}>
+          Each part is separated by a single space:
+        </Typography>
+        <Box component="ul" sx={{ mt: 0, mb: 2, pl: 3, ...listSx }}>
+          <Typography
+            component="li"
+            variant="body2"
+            gutterBottom
+            sx={listItemSx}
+          >
+            <strong>column</strong> — the field you want to filter on (e.g.{" "}
+            <Chip
+              label="name"
+              size="small"
+              sx={{ fontFamily: "monospace", ...chipSx }}
             />
-            <strong style={{ color: color === "inherit" ? undefined : color }}>
-              {label}
-            </strong>{" "}
-            — {desc}
+            ,{" "}
+            <Chip
+              label="duration"
+              size="small"
+              sx={{ fontFamily: "monospace", ...chipSx }}
+            />
+            ).
           </Typography>
-        ))}
-      </Box>
-    </DialogContent>
+          <Typography
+            component="li"
+            variant="body2"
+            gutterBottom
+            sx={listItemSx}
+          >
+            <strong>operator</strong> — the comparison to apply (e.g.{" "}
+            <Chip
+              label="=="
+              size="small"
+              sx={{ fontFamily: "monospace", ...chipSx }}
+            />
+            ,{" "}
+            <Chip
+              label="contains"
+              size="small"
+              sx={{ fontFamily: "monospace", ...chipSx }}
+            />
+            ,{" "}
+            <Chip
+              label=">"
+              size="small"
+              sx={{ fontFamily: "monospace", ...chipSx }}
+            />
+            ).
+          </Typography>
+          <Typography
+            component="li"
+            variant="body2"
+            gutterBottom
+            sx={listItemSx}
+          >
+            <strong>value</strong> — what you are comparing against. Wrap
+            values that contain spaces in double quotes:{" "}
+            <Chip
+              label={`"John Doe"`}
+              size="small"
+              sx={{ fontFamily: "monospace", ...chipSx }}
+            />
+            .
+          </Typography>
+        </Box>
 
-    <DialogActions>
-      <Button onClick={onClose} variant="contained" disableElevation>
-        Got it
-      </Button>
-    </DialogActions>
-  </Dialog>
-);
+        <Divider sx={{ my: 2, ...dividerSx }} />
+
+        {/* ── Combining Conditions ─────────────────────────────────────── */}
+        <Typography variant="h6" gutterBottom sx={sectionTitleSx}>
+          Combining Conditions
+        </Typography>
+        <Typography variant="body2" paragraph sx={bodySx}>
+          Use <strong>AND</strong> or <strong>OR</strong> (uppercase) to join
+          multiple conditions:
+        </Typography>
+        <Box
+          component="pre"
+          sx={{
+            bgcolor: "grey.100",
+            borderLeft: 4,
+            borderColor: "primary.main",
+            px: 2,
+            py: 1.5,
+            borderRadius: 1,
+            overflowX: "auto",
+            mb: 2,
+            fontFamily: "monospace",
+            fontSize: "0.875rem",
+            ...codeBlockSx,
+          }}
+        >
+          {`condition1 AND condition2 AND condition3
+condition1 OR  condition2`}
+        </Box>
+        <Typography
+          variant="body2"
+          sx={{ color: "error.main", ...warningTextSx }}
+          paragraph
+        >
+          ⚠ You cannot mix <strong>AND</strong> and <strong>OR</strong> in the
+          same query. Pick one logical operator and use it consistently.
+        </Typography>
+
+        <Divider sx={{ my: 2, ...dividerSx }} />
+
+        {/* ── Examples ─────────────────────────────────────────────────── */}
+        <Typography variant="h6" gutterBottom sx={sectionTitleSx}>
+          Examples
+        </Typography>
+
+        {[
+          {
+            label: "Exact match",
+            code: `name == "Alice"`,
+          },
+          {
+            label: "Contains substring",
+            code: `name contains "ali"`,
+          },
+          {
+            label: "Numeric comparison",
+            code: `duration > 30`,
+          },
+          {
+            label: "Multiple conditions (AND)",
+            code: `name == "Alice" AND duration > 30`,
+          },
+          {
+            label: "Multiple conditions (OR)",
+            code: `status == active OR status == pending`,
+          },
+          {
+            label: "Date range",
+            code: `created_at after 2024-01-01 AND created_at before 2024-12-31`,
+          },
+        ].map(({ label, code }) => (
+          <Box key={label} mb={1.5}>
+            <Typography
+              variant="caption"
+              sx={{
+                color: "text.secondary",
+                textTransform: "uppercase",
+                letterSpacing: 0.5,
+                ...exampleLabelSx,
+              }}
+            >
+              {label}
+            </Typography>
+            <Box
+              component="pre"
+              sx={{
+                bgcolor: "grey.50",
+                border: 1,
+                borderColor: "divider",
+                px: 2,
+                py: 1,
+                borderRadius: 1,
+                overflowX: "auto",
+                mt: 0.5,
+                fontFamily: "monospace",
+                fontSize: "0.875rem",
+                ...exampleBlockSx,
+              }}
+            >
+              {code}
+            </Box>
+          </Box>
+        ))}
+
+        <Divider sx={{ my: 2, ...dividerSx }} />
+
+        {/* ── Tips ─────────────────────────────────────────────────────── */}
+        <Typography variant="h6" gutterBottom sx={sectionTitleSx}>
+          Tips
+        </Typography>
+        <Box component="ul" sx={{ mt: 0, mb: 1, pl: 3, ...listSx }}>
+          {[
+            "Start typing a column name and select it from the suggestion list.",
+            "After picking a column, the suggestion list will show valid operators for that column.",
+            "After entering a value, AND / OR will appear in the suggestion list.",
+            'Wrap multi-word values in double quotes — e.g. "John Doe".',
+            "Syntax errors are highlighted in the text box. Hover the input to see the specific error.",
+            "You can also build queries using the advanced filter panel (click the ⊟ icon).",
+          ].map((tip) => (
+            <Typography
+              key={tip}
+              component="li"
+              variant="body2"
+              gutterBottom
+              sx={listItemSx}
+            >
+              {tip}
+            </Typography>
+          ))}
+        </Box>
+
+        <Divider sx={{ my: 2, ...dividerSx }} />
+
+        {/* ── Token Colors ─────────────────────────────────────────────── */}
+        <Typography variant="h6" gutterBottom sx={sectionTitleSx}>
+          Syntax Highlighting
+        </Typography>
+        <Typography variant="body2" paragraph sx={bodySx}>
+          As you type, each part of the query is colorized to help you spot
+          mistakes at a glance:
+        </Typography>
+        <Box component="ul" sx={{ mt: 0, mb: 1, pl: 3, ...listSx }}>
+          {[
+            { color: "#1976d2", label: "Blue", desc: "Known column" },
+            {
+              color: "#0288d1",
+              label: "Light blue",
+              desc: "Custom / unknown column",
+            },
+            { color: "#d32f2f", label: "Red", desc: "Valid operator" },
+            {
+              color: "#9e9e9e",
+              label: "Grey",
+              desc: "Unrecognized operator (still typing)",
+            },
+            {
+              color: "#7b1fa2",
+              label: "Purple",
+              desc: "Logical connector — AND / OR",
+            },
+            { color: "inherit", label: "Default", desc: "Value" },
+          ].map(({ color, label, desc }) => (
+            <Typography
+              key={label}
+              component="li"
+              variant="body2"
+              gutterBottom
+              sx={colorLegendItemSx}
+            >
+              <Box
+                component="span"
+                sx={{
+                  display: "inline-block",
+                  width: 12,
+                  height: 12,
+                  borderRadius: "50%",
+                  bgcolor: color === "inherit" ? "text.primary" : color,
+                  mr: 1,
+                  verticalAlign: "middle",
+                  ...colorSwatchSx,
+                }}
+              />
+              <strong
+                style={{ color: color === "inherit" ? undefined : color }}
+              >
+                {label}
+              </strong>{" "}
+              — {desc}
+            </Typography>
+          ))}
+        </Box>
+      </DialogContent>
+
+      <DialogActions sx={actionsSx}>
+        <Button
+          onClick={onClose}
+          variant="contained"
+          disableElevation
+          sx={gotItButtonSx}
+        >
+          Got it
+        </Button>
+      </DialogActions>
+    </Dialog>
+  );
+};
 
 // ---------------------------------------------------------------------------
 // QueryTextBox
@@ -318,14 +437,23 @@ const QueryTextBox = ({
   const {
     root: rootSx,
     inputRow: inputRowSx,
+    inputWrapper: inputWrapperSx,
+    highlightOverlay: highlightOverlaySx,
     input: inputSx,
     applyButton: applyButtonSx,
     helpButton: helpButtonSx,
+    helpTooltip: helpTooltipSx,
+    adornmentBox: adornmentBoxSx,
+    errorTooltip: errorTooltipSx,
+    hintTooltip: hintTooltipSx,
     popper: popperSx,
     suggestionsBox: suggestionsBoxSx,
     suggestionsList: suggestionsListSx,
     suggestionItem: suggestionItemSx,
+    suggestionText: suggestionTextSx,
     tokenColors: tokenColorsOverride,
+    tokenFontWeights: tokenFontWeightsOverride,
+    helpModal: helpModalSx,
   } = sx;
 
   // Merge caller-provided token colors over the defaults so users can replace
@@ -333,6 +461,15 @@ const QueryTextBox = ({
   const tokenColors = useMemo(
     () => ({ ...DEFAULT_TOKEN_COLORS, ...(tokenColorsOverride || {}) }),
     [tokenColorsOverride]
+  );
+
+  // Same merge strategy for per-token font weights.
+  const tokenFontWeights = useMemo(
+    () => ({
+      ...DEFAULT_TOKEN_FONT_WEIGHTS,
+      ...(tokenFontWeightsOverride || {}),
+    }),
+    [tokenFontWeightsOverride]
   );
 
   const [anchorEl, setAnchorEl] = useState(null);
@@ -525,7 +662,7 @@ const QueryTextBox = ({
           line up pixel-perfectly. Caret/selection still come from the real
           input — we only paint colors underneath.
         */}
-        <Box sx={{ position: "relative", flex: 1, minWidth: 0 }}>
+        <Box sx={{ position: "relative", flex: 1, minWidth: 0, ...inputWrapperSx }}>
           <Box
             ref={highlightRef}
             aria-hidden="true"
@@ -551,6 +688,7 @@ const QueryTextBox = ({
               pointerEvents: "none",
               color: "transparent",
               borderRadius: "4px",
+              ...highlightOverlaySx,
             }}
           >
             {tokens.map((tok, i) =>
@@ -562,9 +700,9 @@ const QueryTextBox = ({
                   style={{
                     color: tokenColors[tok.type] || "inherit",
                     fontWeight:
-                      tok.type === "logical" || tok.type === "operator"
-                        ? 600
-                        : 400,
+                      tokenFontWeights[tok.type] ??
+                      DEFAULT_TOKEN_FONT_WEIGHTS[tok.type] ??
+                      400,
                   }}
                 >
                   {tok.text}
@@ -586,16 +724,20 @@ const QueryTextBox = ({
                       color: "error.contrastText",
                       fontSize: "0.75rem",
                       maxWidth: 360,
+                      ...errorTooltipSx,
                     }
                   : {
                       bgcolor: "info.dark",
                       color: "common.white",
                       fontSize: "0.75rem",
                       maxWidth: 360,
+                      ...hintTooltipSx,
                     },
               },
               arrow: {
-                sx: { color: showError ? "error.main" : "info.dark" },
+                sx: showError
+                  ? { color: "error.main", ...(errorTooltipSx?.bgcolor && { color: errorTooltipSx.bgcolor }) }
+                  : { color: "info.dark", ...(hintTooltipSx?.bgcolor && { color: hintTooltipSx.bgcolor }) },
               },
             }}
           >
@@ -639,10 +781,19 @@ const QueryTextBox = ({
                 <InputAdornment position="end">
                   <Box
                     ref={adornmentRef}
-                    sx={{ display: "flex", alignItems: "center", gap: 0.5 }}
+                    sx={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 0.5,
+                      ...adornmentBoxSx,
+                    }}
                   >
                     {/* Help button — opens the query-syntax modal */}
-                    <Tooltip title="Query syntax help" placement="top">
+                    <Tooltip
+                      title="Query syntax help"
+                      placement="top"
+                      sx={helpTooltipSx}
+                    >
                       <IconButton
                         onClick={() => setHelpOpen(true)}
                         aria-label="Query syntax help"
@@ -705,7 +856,9 @@ const QueryTextBox = ({
                   onClick={() => handleSuggestionClick(suggestion)}
                   sx={suggestionItemSx}
                 >
-                  <Typography variant="body2">{suggestion}</Typography>
+                  <Typography variant="body2" sx={suggestionTextSx}>
+                    {suggestion}
+                  </Typography>
                 </ListItemButton>
               </ListItem>
             ))}
@@ -714,7 +867,11 @@ const QueryTextBox = ({
       </Popper>
 
       {/* Help modal */}
-      <HelpModal open={helpOpen} onClose={() => setHelpOpen(false)} />
+      <HelpModal
+        open={helpOpen}
+        onClose={() => setHelpOpen(false)}
+        sx={helpModalSx}
+      />
     </Box>
   );
 };

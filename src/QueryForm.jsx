@@ -34,7 +34,28 @@ const QueryForm = ({
   defaultOperators,
   defaultValues,
   defaultOperator,
+  sx = {},
 }) => {
+  // Slot map: each key targets a specific element in the rendered tree so
+  // callers can override styles per-slot, e.g.
+  // sx={{ root: {...}, applyButton: {...}, columnSelect: {...} }}.
+  const {
+    root: rootSx,
+    header: headerSx,
+    headerLabel: headerLabelSx,
+    globalOperatorSelect: globalOperatorSelectSx,
+    rowsStack: rowsStackSx,
+    row: rowSx,
+    columnSelect: columnSelectSx,
+    operatorSelect: operatorSelectSx,
+    valueInput: valueInputSx,
+    deleteButton: deleteButtonSx,
+    deleteTooltip: deleteTooltipSx,
+    actions: actionsSx,
+    addButton: addButtonSx,
+    applyButton: applyButtonSx,
+  } = sx;
+
   const [queries, setQueries] = useState([
     { column: "", operator: "", value: "" },
   ]);
@@ -76,6 +97,7 @@ const QueryForm = ({
         width: "100%",
         padding: { xs: 1, sm: 2 },
         boxSizing: "border-box",
+        ...rootSx,
       }}
     >
       {/* Header: "Combine queries with: [AND/OR]". Wraps on very narrow
@@ -87,14 +109,17 @@ const QueryForm = ({
           flexWrap: "wrap",
           gap: 1,
           mb: 2,
+          ...headerSx,
         }}
       >
-        <Typography variant="body1">Combine queries with:</Typography>
+        <Typography variant="body1" sx={headerLabelSx}>
+          Combine queries with:
+        </Typography>
         <Select
           size="small"
           value={globalOperator}
           onChange={(e) => setGlobalOperator(e.target.value)}
-          sx={{ minWidth: 120 }}
+          sx={{ minWidth: 120, ...globalOperatorSelectSx }}
         >
           {defaultOperators.map((item) => (
             <MenuItem key={item} value={item}>
@@ -107,7 +132,7 @@ const QueryForm = ({
       {/* Query rows. Each row is a flex container that collapses to a vertical
           stack on `xs` and lays out horizontally on `sm`+ with the three
           controls sharing the row evenly. */}
-      <Stack spacing={1.5}>
+      <Stack spacing={1.5} sx={rowsStackSx}>
         {queries.map((query, index) => (
           <Box
             key={index}
@@ -119,6 +144,7 @@ const QueryForm = ({
               py: 0.5,
               borderBottom: { xs: 1, sm: 0 },
               borderColor: "divider",
+              ...rowSx,
             }}
           >
             <Select
@@ -129,7 +155,7 @@ const QueryForm = ({
               }
               displayEmpty
               fullWidth
-              sx={fieldSx}
+              sx={{ ...fieldSx, ...columnSelectSx }}
             >
               <MenuItem value="" disabled>
                 Select Column
@@ -150,7 +176,7 @@ const QueryForm = ({
               displayEmpty
               disabled={!query.column}
               fullWidth
-              sx={fieldSx}
+              sx={{ ...fieldSx, ...operatorSelectSx }}
             >
               <MenuItem value="" disabled>
                 Select Operator
@@ -171,10 +197,10 @@ const QueryForm = ({
               }
               placeholder="Enter value"
               fullWidth
-              sx={fieldSx}
+              sx={{ ...fieldSx, ...valueInputSx }}
             />
 
-            <Tooltip title="Delete Query">
+            <Tooltip title="Delete Query" sx={deleteTooltipSx}>
               <IconButton
                 onClick={() => handleDeleteRow(index)}
                 color="error"
@@ -184,6 +210,7 @@ const QueryForm = ({
                   // stacked column so it doesn't take a full row of its own.
                   alignSelf: { xs: "flex-end", sm: "center" },
                   flex: { sm: "0 0 auto" },
+                  ...deleteButtonSx,
                 }}
               >
                 <Delete />
@@ -200,12 +227,13 @@ const QueryForm = ({
           flexWrap: "wrap",
           gap: 1,
           mt: 2.5,
+          ...actionsSx,
         }}
       >
         <Button
           startIcon={<Add />}
           onClick={handleAddRow}
-          sx={{ flex: { xs: "1 1 100%", sm: "0 0 auto" } }}
+          sx={{ flex: { xs: "1 1 100%", sm: "0 0 auto" }, ...addButtonSx }}
         >
           Add Query
         </Button>
@@ -213,7 +241,7 @@ const QueryForm = ({
           variant="contained"
           color="primary"
           onClick={() => handleApplyFilters(globalOperator, queries)}
-          sx={{ flex: { xs: "1 1 100%", sm: "0 0 auto" } }}
+          sx={{ flex: { xs: "1 1 100%", sm: "0 0 auto" }, ...applyButtonSx }}
         >
           Apply Filters
         </Button>

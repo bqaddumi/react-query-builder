@@ -11,6 +11,7 @@ The `QueryBuilder` component helps users build complex search queries using an i
 - **Interactive Query Builder**: Create queries by selecting columns, operators, and values.
 - **Popover Interface**: Advanced filters are managed in a simple popover UI.
 - **Customizable**: Define columns and their valid operators.
+- **Fully Styleable**: Every visual element — including the advanced-filter form, the help modal, validation tooltips, and the syntax-highlight overlay — can be styled via the `sx` slot map.
 - **Callback Support**: Trigger a function when the query is applied.
 
 ---
@@ -94,7 +95,7 @@ export default function App() {
 
 The `QueryBuilder` component is fully styleable from the outside through the `sx` prop. Instead of accepting a single style object, `sx` is a **slot map**: each key targets a specific part of the rendered tree, and its value is any valid MUI [`sx`](https://mui.com/system/getting-started/the-sx-prop/) value (object, function, or array).
 
-### Available Slots
+### QueryBuilder Slots
 
 | **Slot**            | **Targets**                                                                       |
 | ------------------- | --------------------------------------------------------------------------------- |
@@ -102,9 +103,11 @@ The `QueryBuilder` component is fully styleable from the outside through the `sx
 | `textBoxContainer`  | The `Box` wrapping the `QueryTextBox` and the tune button.                        |
 | `textBox`           | A nested slot map forwarded to `QueryTextBox`. See [Text Box Slots](#text-box-slots). |
 | `iconButton`        | The tune (settings) `IconButton`.                                                 |
-| `popover`           | The advanced-filters `Popover`.                                                   |
+| `popover`           | The advanced-filters `Popover` (wrapper).                                         |
+| `popoverPaper`      | The `Paper` element inside the `Popover`. Override responsive width / height caps here. |
 | `popoverContent`    | The inner `Box` inside the popover.                                               |
 | `title`             | The "Query Builder" title `Typography`.                                           |
+| `queryForm`         | A nested slot map forwarded to `QueryForm`. See [Query Form Slots](#query-form-slots). |
 
 > All slots are optional. Any slot you don't provide simply falls back to the component's default styling.
 
@@ -112,17 +115,27 @@ The `QueryBuilder` component is fully styleable from the outside through the `sx
 
 The free-text query builder (`QueryTextBox`) exposes its own slot map, which you can drive either through `sx.textBox` from `QueryBuilder` or directly via the `sx` prop when using `QueryTextBox` standalone.
 
-| **Slot**           | **Targets**                                                          |
-| ------------------ | -------------------------------------------------------------------- |
-| `root`             | The outer wrapper `Box` of `QueryTextBox`.                           |
-| `inputRow`         | The `Box` wrapping the `OutlinedInput` and the Apply `Button`.       |
-| `input`            | The `OutlinedInput` field.                                           |
-| `applyButton`      | The Apply `Button`.                                                  |
-| `popper`           | The suggestions `Popper`.                                            |
-| `suggestionsBox`   | The `Box` rendered inside the popper (border / background wrapper).  |
-| `suggestionsList`  | The `List` of suggestions.                                           |
-| `suggestionItem`   | Each `ListItemButton` inside the suggestions list.                   |
-| `tokenColors`      | Color overrides for syntax-highlighted tokens. See [Token Highlighting](#token-highlighting). |
+| **Slot**            | **Targets**                                                          |
+| ------------------- | -------------------------------------------------------------------- |
+| `root`              | The outer wrapper `Box` of `QueryTextBox`.                           |
+| `inputRow`          | The `Box` wrapping the `OutlinedInput` and the Apply `Button`.       |
+| `inputWrapper`      | The relative-positioned wrapper that holds the highlight overlay + input. |
+| `highlightOverlay`  | The transparent `Box` that paints colored tokens behind the input.   |
+| `input`             | The `OutlinedInput` field.                                           |
+| `adornmentBox`      | The flex `Box` inside the input's end adornment (holds help icon, custom adornment, Apply button). |
+| `helpButton`        | The help (?) `IconButton`.                                           |
+| `helpTooltip`       | The `Tooltip` wrapping the help icon.                                |
+| `applyButton`       | The Apply `Button`.                                                  |
+| `errorTooltip`      | The validation-error `Tooltip` shown for invalid queries. Override `bgcolor`, `color`, etc. |
+| `hintTooltip`       | The hint `Tooltip` shown for an empty input.                         |
+| `popper`            | The suggestions `Popper`.                                            |
+| `suggestionsBox`    | The `Box` rendered inside the popper (border / background wrapper).  |
+| `suggestionsList`   | The `List` of suggestions.                                           |
+| `suggestionItem`    | Each `ListItemButton` inside the suggestions list.                   |
+| `suggestionText`    | The `Typography` displaying each suggestion's text.                  |
+| `tokenColors`       | Color overrides for syntax-highlighted tokens. See [Token Highlighting](#token-highlighting). |
+| `tokenFontWeights`  | Font-weight overrides per token type. See [Token Font Weights](#token-font-weights). |
+| `helpModal`         | A nested slot map forwarded to the help modal. See [Help Modal Slots](#help-modal-slots). |
 
 ##### Token Highlighting
 
@@ -156,6 +169,79 @@ As the user types, `QueryTextBox` parses the input into typed tokens and paints 
 />
 ```
 
+##### Token Font Weights
+
+You can also tweak the per-token font weight via `sx.textBox.tokenFontWeights` (or `sx.tokenFontWeights` on `QueryTextBox` directly). Accepts any valid CSS `font-weight` value (number or keyword).
+
+| **Token Type**     | **Default Weight** |
+| ------------------ | ------------------ |
+| `column`           | `400`              |
+| `customColumn`     | `400`              |
+| `operator`         | `600`              |
+| `unknownOperator`  | `400`              |
+| `logical`          | `600`              |
+| `value`            | `400`              |
+
+```jsx
+<QueryBuilder
+  sx={{
+    textBox: {
+      tokenFontWeights: {
+        column: 700,
+        operator: 500,
+        logical: 800,
+      },
+    },
+  }}
+/>
+```
+
+#### Query Form Slots
+
+The advanced-filter form (`QueryForm`) inside the popover exposes its own slot map via `sx.queryForm`.
+
+| **Slot**                 | **Targets**                                                                       |
+| ------------------------ | --------------------------------------------------------------------------------- |
+| `root`                   | The outer wrapper `Box` of the form.                                              |
+| `header`                 | The "Combine queries with: [AND/OR]" header `Box`.                                |
+| `headerLabel`            | The "Combine queries with:" label `Typography`.                                   |
+| `globalOperatorSelect`   | The global AND/OR `Select`.                                                       |
+| `rowsStack`              | The `Stack` that holds the query rows.                                            |
+| `row`                    | Each individual query row `Box` (column / operator / value / delete).             |
+| `columnSelect`           | The column `Select` in each row.                                                  |
+| `operatorSelect`         | The operator `Select` in each row.                                                |
+| `valueInput`             | The value `TextField` in each row.                                                |
+| `deleteButton`           | The delete (trash) `IconButton` for each row.                                     |
+| `deleteTooltip`          | The `Tooltip` wrapping the delete button.                                         |
+| `actions`                | The action-buttons row `Box` (holds "Add Query" + "Apply Filters").               |
+| `addButton`              | The "Add Query" `Button`.                                                         |
+| `applyButton`            | The "Apply Filters" `Button`.                                                     |
+
+#### Help Modal Slots
+
+The query-syntax help modal (opened from the `?` icon inside `QueryTextBox`) exposes its own slot map via `sx.textBox.helpModal` (or `sx.helpModal` when using `QueryTextBox` directly).
+
+| **Slot**            | **Targets**                                                          |
+| ------------------- | -------------------------------------------------------------------- |
+| `dialog`            | The `Dialog` itself.                                                 |
+| `title`             | The `DialogTitle` ("How to Use the Query Search").                   |
+| `closeButton`       | The close (×) `IconButton` in the title.                             |
+| `content`           | The `DialogContent`.                                                 |
+| `sectionTitle`      | Each `<h6>` section heading inside the content.                      |
+| `body`              | Each paragraph `Typography` inside the content.                      |
+| `codeBlock`         | The grey-background code blocks (e.g. `column operator value`).      |
+| `exampleBlock`      | Each individual example code block.                                  |
+| `exampleLabel`      | The uppercase caption above each example.                            |
+| `list`              | Each `<ul>` inside the content (tips, syntax bullets, etc.).         |
+| `listItem`          | Each `<li>` `Typography`.                                            |
+| `chip`              | Each inline `Chip` (e.g. `name`, `==`, `"John Doe"`).                |
+| `divider`           | Each section `Divider`.                                              |
+| `warningText`       | The red "Cannot mix AND and OR" warning paragraph.                   |
+| `colorLegendItem`   | Each list item in the syntax-highlighting color legend.              |
+| `colorSwatch`       | The colored circle (`Box`) next to each legend item.                 |
+| `actions`           | The `DialogActions` row.                                             |
+| `gotItButton`       | The "Got it" `Button`.                                               |
+
 ### Basic Example
 
 ```jsx
@@ -169,6 +255,7 @@ As the user types, `QueryTextBox` parses the input into typed tokens and paints 
     textBoxContainer: { marginBottom: "8px" },
     iconButton: { color: "primary.main" },
     popover: { padding: "24px" },
+    popoverPaper: { borderRadius: 3, boxShadow: 6 },
     popoverContent: { minWidth: "400px" },
     title: { color: "secondary.main", fontWeight: 700 },
     textBox: {
@@ -178,6 +265,12 @@ As the user types, `QueryTextBox` parses the input into typed tokens and paints 
       suggestionItem: {
         "&:hover": { backgroundColor: "action.hover" },
       },
+    },
+    queryForm: {
+      header: { mb: 3 },
+      globalOperatorSelect: { minWidth: 160 },
+      columnSelect: { bgcolor: "background.default" },
+      applyButton: { textTransform: "none", bgcolor: "success.main" },
     },
   }}
 />
@@ -208,6 +301,10 @@ Because each slot accepts a normal MUI `sx` value, you can use theme tokens, bre
       "&:hover": { color: theme.palette.primary.dark },
     }),
     popover: { mt: 1 },
+    popoverPaper: {
+      // Override the default responsive width caps
+      width: { xs: "calc(100vw - 32px)", sm: 600, md: 800 },
+    },
     popoverContent: { minWidth: 480 },
     title: { mb: 1, color: "text.secondary" },
     textBox: {
@@ -221,6 +318,23 @@ Because each slot accepts a normal MUI `sx` value, you can use theme tokens, bre
         borderRadius: 1,
         boxShadow: 3,
       },
+      errorTooltip: { bgcolor: "warning.main", color: "warning.contrastText" },
+      hintTooltip: { bgcolor: "primary.dark" },
+      helpModal: {
+        dialog: { "& .MuiDialog-paper": { borderRadius: 3 } },
+        sectionTitle: { color: "primary.main" },
+        codeBlock: { bgcolor: "grey.900", color: "common.white" },
+        gotItButton: { textTransform: "none" },
+      },
+    },
+    queryForm: {
+      root: { p: 3 },
+      row: (theme) => ({
+        bgcolor: theme.palette.action.hover,
+        borderRadius: 1,
+        p: 1,
+      }),
+      deleteButton: { "&:hover": { bgcolor: "error.light" } },
     },
   }}
 />

@@ -1,6 +1,6 @@
 {
   "name": "query-builder-react",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Advanced React query builder that lets users write a query in a free-text input or build it visually from a popover, with column/operator/value rows and AND/OR logic.",
   "main": "dist/query-builder.umd.js",
   "module": "dist/query-builder.es.js",
