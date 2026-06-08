@@ -1,0 +1,65 @@
+{
+  "name": "query-builder-react",
+  "version": "1.0.1",
+  "description": "Advanced React query builder that lets users write a query in a free-text input or build it visually from a popover, with column/operator/value rows and AND/OR logic.",
+  "main": "dist/query-builder.umd.js",
+  "module": "dist/query-builder.es.js",
+  "exports": {
+    ".": {
+      "import": "./dist/query-builder.es.js",
+      "require": "./dist/query-builder.umd.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "dist",
+    "src",
+    "readme.md"
+  ],
+  "scripts": {
+    "build": "vite build",
+    "format": "prettier --write src/\"**/*.+(js|jsx|json|css|md)\"",
+    "prepublishOnly": "vite build",
+    "release": "pnpm publish --registry=https://registry.npmjs.org/ --access=public --no-git-checks",
+    "release:patch": "npm version patch --no-git-tag-version && pnpm run release",
+    "release:minor": "npm version minor --no-git-tag-version && pnpm run release",
+    "release:major": "npm version major --no-git-tag-version && pnpm run release"
+  },
+  "keywords": [
+    "react",
+    "query",
+    "query-builder",
+    "filter",
+    "search",
+    "mui",
+    "material-ui",
+    "popover",
+    "advanced-search"
+  ],
+  "author": "Bashar Qaddumi",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/bqaddumi/react-query-builder.git"
+  },
+  "bugs": {
+    "url": "https://github.com/bqaddumi/react-query-builder/issues"
+  },
+  "homepage": "https://github.com/bqaddumi/react-query-builder#readme",
+  "publishConfig": {
+    "access": "public"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^4.3.4",
+    "vite": "^6.0.1"
+  },
+  "peerDependencies": {
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "@emotion/react": "^11.13.5",
+    "@emotion/styled": "^11.13.5",
+    "@mui/icons-material": "^6.1.9",
+    "@mui/material": "^6.1.9"
+  },
+  "dependencies": {}
+}
