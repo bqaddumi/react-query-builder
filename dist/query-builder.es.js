@@ -6215,7 +6215,14 @@ function vo(e = "AND") {
     rules: [bo()]
   };
 }
-const Sl = ({ rule: e, index: t, columnsOperator: n, onChange: r, onDelete: o, sx: i = {} }) => {
+const Sl = ({
+  rule: e,
+  index: t,
+  columnsOperator: n,
+  onChange: r,
+  onDelete: o,
+  sx: i = {}
+}) => {
   var m;
   const { columnSelectSx: s, operatorSelectSx: a, valueInputSx: f, deleteButtonSx: d } = i;
   return /* @__PURE__ */ ee(
@@ -6288,7 +6295,15 @@ const Sl = ({ rule: e, index: t, columnsOperator: n, onChange: r, onDelete: o, s
       ]
     }
   );
-}, Eo = ({ group: e, path: t, columnsOperator: n, onChange: r, onDelete: o, isRoot: i, sx: s = {} }) => {
+}, Eo = ({
+  group: e,
+  path: t,
+  columnsOperator: n,
+  onChange: r,
+  onDelete: o,
+  isRoot: i,
+  sx: s = {}
+}) => {
   const a = (u, T) => {
     T !== null && r(t, { ...e, combinator: T });
   }, f = () => {
@@ -6306,7 +6321,9 @@ const Sl = ({ rule: e, index: t, columnsOperator: n, onChange: r, onDelete: o, s
     const T = e.rules.filter((O, I) => I !== u);
     r(t, { ...e, rules: T });
   }, y = (u, T) => {
-    const O = u[u.length - 1], I = e.rules.map((x, S) => S === O ? T : x);
+    const O = u[u.length - 1], I = e.rules.map(
+      (x, S) => S === O ? T : x
+    );
     r(t, { ...e, rules: I });
   }, g = (u) => {
     const T = e.rules.filter((O, I) => I !== u);
@@ -6412,15 +6429,7 @@ const Sl = ({ rule: e, index: t, columnsOperator: n, onChange: r, onDelete: o, s
                   children: /* @__PURE__ */ E(Hn, { fontSize: "small" })
                 }
               ) }),
-              !i && /* @__PURE__ */ E(et, { title: "Delete Group", children: /* @__PURE__ */ E(
-                ze,
-                {
-                  onClick: () => o(),
-                  color: "error",
-                  size: "small",
-                  children: /* @__PURE__ */ E(Fr, { fontSize: "small" })
-                }
-              ) })
+              !i && /* @__PURE__ */ E(et, { title: "Delete Group", children: /* @__PURE__ */ E(ze, { onClick: () => o(), color: "error", size: "small", children: /* @__PURE__ */ E(Fr, { fontSize: "small" }) }) })
             ]
           }
         ),
@@ -6519,14 +6528,7 @@ const Sl = ({ rule: e, index: t, columnsOperator: n, onChange: r, onDelete: o, s
                   children: "Search"
                 }
               ),
-              /* @__PURE__ */ E(
-                Ft,
-                {
-                  variant: "outlined",
-                  sx: f,
-                  children: "Cancel"
-                }
-              )
+              /* @__PURE__ */ E(Ft, { variant: "outlined", sx: f, children: "Cancel" })
             ]
           }
         )
@@ -6564,7 +6566,8 @@ function Al(e) {
       t.push({ type: "word", value: e.slice(n, r + 1) }), n = r + 1;
     } else {
       let r = n;
-      for (; r < e.length && e[r] !== " " && e[r] !== "	" && e[r] !== "(" && e[r] !== ")"; ) r++;
+      for (; r < e.length && e[r] !== " " && e[r] !== "	" && e[r] !== "(" && e[r] !== ")"; )
+        r++;
       t.push({ type: "word", value: e.slice(n, r) }), n = r;
     }
   }
@@ -6589,8 +6592,18 @@ function Pl(e, t, n) {
     const m = [];
     let p = [f[0]];
     for (let h = 0; h < d.length; h++)
-      d[h] === "AND" ? p.push(f[h + 1]) : (p.length === 1 ? m.push(p[0]) : m.push({ type: "group", combinator: "AND", not: !1, rules: p }), p = [f[h + 1]]);
-    return p.length === 1 ? m.push(p[0]) : m.push({ type: "group", combinator: "AND", not: !1, rules: p }), { type: "group", combinator: "OR", not: !1, rules: m };
+      d[h] === "AND" ? p.push(f[h + 1]) : (p.length === 1 ? m.push(p[0]) : m.push({
+        type: "group",
+        combinator: "AND",
+        not: !1,
+        rules: p
+      }), p = [f[h + 1]]);
+    return p.length === 1 ? m.push(p[0]) : m.push({
+      type: "group",
+      combinator: "AND",
+      not: !1,
+      rules: p
+    }), { type: "group", combinator: "OR", not: !1, rules: m };
   }
   function s() {
     if (r >= e.length)
@@ -6625,18 +6638,36 @@ function Nl(e, t) {
   let n = 0;
   for (const f of e)
     if (f === "(" && n++, f === ")" && n--, n < 0)
-      return { isValid: !1, error: "Unmatched closing parenthesis `)`. Check your grouping." };
+      return {
+        isValid: !1,
+        error: "Unmatched closing parenthesis `)`. Check your grouping."
+      };
   if (n > 0)
-    return { isValid: !1, error: "Unclosed opening parenthesis `(`. Add the matching `)` to close the group." };
+    return {
+      isValid: !1,
+      error: "Unclosed opening parenthesis `(`. Add the matching `)` to close the group."
+    };
   if ((e.match(/"/g) || []).length % 2 !== 0)
-    return { isValid: !1, error: 'Unclosed quoted value. Make sure every `"` has a matching `"`.' };
+    return {
+      isValid: !1,
+      error: 'Unclosed quoted value. Make sure every `"` has a matching `"`.'
+    };
   if (/\b(AND|OR)\s*$/i.test(e))
-    return { isValid: !1, error: "Query ends with AND/OR. Add another condition after it." };
+    return {
+      isValid: !1,
+      error: "Query ends with AND/OR. Add another condition after it."
+    };
   const i = e.replace(/^\s*\(\s*/, "");
   if (/^\s*(AND|OR)\b/i.test(i))
-    return { isValid: !1, error: "Query starts with AND/OR. Add a condition before it." };
+    return {
+      isValid: !1,
+      error: "Query starts with AND/OR. Add a condition before it."
+    };
   if (/\(\s*\)/.test(e))
-    return { isValid: !1, error: "Empty parentheses `()` found. Add conditions inside the group." };
+    return {
+      isValid: !1,
+      error: "Empty parentheses `()` found. Add conditions inside the group."
+    };
   const a = e.replace(/[()]/g, " ").split(/\s+(?:AND|OR)\s+/i);
   for (const f of a) {
     const d = f.trim();
@@ -6676,7 +6707,11 @@ function xo(e) {
   if (!e || e.type !== "group") return [];
   const t = [];
   for (const n of e.rules || [])
-    n.type === "rule" ? t.push({ column: n.column, operator: n.operator, value: n.value }) : n.type === "group" && t.push(...xo(n));
+    n.type === "rule" ? t.push({
+      column: n.column,
+      operator: n.operator,
+      value: n.value
+    }) : n.type === "group" && t.push(...xo(n));
   return t;
 }
 function So(e) {
@@ -6948,7 +6983,8 @@ condition1 OR  condition2`
           /* @__PURE__ */ ee(ue, { variant: "body2", paragraph: !0, sx: f, children: [
             "Without parentheses, ",
             /* @__PURE__ */ E("strong", { children: "AND" }),
-            " binds tighter than ",
+            " binds tighter than",
+            " ",
             /* @__PURE__ */ E("strong", { children: "OR" }),
             ":"
           ] }),
@@ -7143,14 +7179,7 @@ condition1 OR  condition2`
                     }
                   }
                 ),
-                /* @__PURE__ */ E(
-                  se,
-                  {
-                    component: "strong",
-                    sx: { color: b },
-                    children: D
-                  }
-                ),
+                /* @__PURE__ */ E(se, { component: "strong", sx: { color: b }, children: D }),
                 " ",
                 "— ",
                 F
@@ -7220,15 +7249,12 @@ condition1 OR  condition2`
     for (const $e of le)
       if (ce = ce == null ? void 0 : ce[$e], ce === void 0) return V;
     return typeof ce == "string" ? ce : V;
-  }, W = Ze(
-    () => {
-      const V = {};
-      for (const le of Object.keys(j))
-        V[le] = _(j[le]);
-      return V;
-    },
-    [j, A]
-  ), [re, me] = xe(null), [C, P] = xe([]), [Y, L] = xe([]), [N, U] = xe(""), [z, q] = xe(!0), [Q, X] = xe(null), [B, H] = xe(!1), [w, ae] = xe(0), ge = ln(), be = ln(null), it = ln(null);
+  }, W = Ze(() => {
+    const V = {};
+    for (const le of Object.keys(j))
+      V[le] = _(j[le]);
+    return V;
+  }, [j, A]), [re, me] = xe(null), [C, P] = xe([]), [Y, L] = xe([]), [N, U] = xe(""), [z, q] = xe(!0), [Q, X] = xe(null), [B, H] = xe(!1), [w, ae] = xe(0), ge = ln(), be = ln(null), it = ln(null);
   dt(() => {
     o != null && U(o);
   }, [o]), dt(() => {
@@ -7290,168 +7316,184 @@ condition1 OR  condition2`
     }, 0);
   }, ye = !!N && !z && !!Q, To = ye ? Q : N ? "" : _l, Co = ye ? void 0 : N ? !1 : void 0;
   return /* @__PURE__ */ ee(se, { width: "100%", sx: m, children: [
-    /* @__PURE__ */ E(se, { display: "flex", sx: p, children: /* @__PURE__ */ ee(se, { sx: { position: "relative", flex: 1, minWidth: 0, ...h }, children: [
-      /* @__PURE__ */ E(
-        se,
-        {
-          ref: be,
-          "aria-hidden": "true",
-          sx: {
-            position: "absolute",
-            top: 0,
-            bottom: 0,
-            left: 0,
-            // Stop short of the endAdornment block (help icon + Apply button
-            // + any caller-provided adornment) so colored tokens never paint
-            // behind the buttons when the query overflows horizontally.
-            right: `${w}px`,
-            padding: "16.5px 14px",
-            // matches default OutlinedInput padding
-            fontFamily: "inherit",
-            fontSize: "1rem",
-            lineHeight: "1.4375em",
-            // MUI OutlinedInput default
-            whiteSpace: "pre",
-            // Must be scrollable so `scrollLeft` syncs with the real input,
-            // but the scrollbar should stay invisible to users.
-            overflow: "auto",
-            scrollbarWidth: "none",
-            // Firefox
-            "&::-webkit-scrollbar": { display: "none" },
-            // Chrome / Safari
-            pointerEvents: "none",
-            color: "transparent",
-            borderRadius: "4px",
-            ...y
-          },
-          children: Fe.map(
-            (V, le) => V.type === "whitespace" ? /* @__PURE__ */ E("span", { children: V.text }, le) : /* @__PURE__ */ E(
-              "span",
-              {
-                style: {
-                  color: W[V.type] || "inherit",
-                  fontWeight: $[V.type] ?? Br[V.type] ?? 400
-                },
-                children: V.text
-              },
-              le
-            )
-          )
-        }
-      ),
-      /* @__PURE__ */ E(
-        et,
-        {
-          title: To,
-          open: Co,
-          placement: "top-start",
-          arrow: !0,
-          componentsProps: {
-            tooltip: {
-              sx: ye ? {
-                bgcolor: "error.main",
-                color: "error.contrastText",
-                fontSize: "0.75rem",
-                maxWidth: 360,
-                ...x
-              } : {
-                bgcolor: "info.dark",
-                color: "common.white",
-                fontSize: "0.75rem",
-                maxWidth: 360,
-                ...S
-              }
-            },
-            arrow: {
-              sx: ye ? { color: "error.main", ...(x == null ? void 0 : x.bgcolor) && { color: x.bgcolor } } : { color: "info.dark", ...(S == null ? void 0 : S.bgcolor) && { color: S.bgcolor } }
-            }
-          },
-          children: /* @__PURE__ */ E(
-            Do,
+    /* @__PURE__ */ E(se, { display: "flex", sx: p, children: /* @__PURE__ */ ee(
+      se,
+      {
+        sx: { position: "relative", flex: 1, minWidth: 0, ...h },
+        children: [
+          /* @__PURE__ */ E(
+            se,
             {
-              ...d,
-              placeholder: s,
+              ref: be,
+              "aria-hidden": "true",
               sx: {
-                width: "100%",
-                backgroundColor: "transparent",
-                "& .MuiOutlinedInput-input": {
-                  // Make the real text invisible so only the colored mirror
-                  // shows through. `caret-color` must be a concrete color (not
-                  // `currentColor`, which would resolve to `transparent` here
-                  // and hide the cursor). We pick the theme's primary text color
-                  // so the caret stays visible in both light and dark themes.
-                  color: "transparent",
-                  caretColor: (V) => V.palette.text.primary,
-                  "&::placeholder": {
-                    color: "text.secondary",
-                    opacity: 0.7
+                position: "absolute",
+                top: 0,
+                bottom: 0,
+                left: 0,
+                // Stop short of the endAdornment block (help icon + Apply button
+                // + any caller-provided adornment) so colored tokens never paint
+                // behind the buttons when the query overflows horizontally.
+                right: `${w}px`,
+                padding: "16.5px 14px",
+                // matches default OutlinedInput padding
+                fontFamily: "inherit",
+                fontSize: "1rem",
+                lineHeight: "1.4375em",
+                // MUI OutlinedInput default
+                whiteSpace: "pre",
+                // Must be scrollable so `scrollLeft` syncs with the real input,
+                // but the scrollbar should stay invisible to users.
+                overflow: "auto",
+                scrollbarWidth: "none",
+                // Firefox
+                "&::-webkit-scrollbar": { display: "none" },
+                // Chrome / Safari
+                pointerEvents: "none",
+                color: "transparent",
+                borderRadius: "4px",
+                ...y
+              },
+              children: Fe.map(
+                (V, le) => V.type === "whitespace" ? /* @__PURE__ */ E("span", { children: V.text }, le) : /* @__PURE__ */ E(
+                  "span",
+                  {
+                    style: {
+                      color: W[V.type] || "inherit",
+                      fontWeight: $[V.type] ?? Br[V.type] ?? 400
+                    },
+                    children: V.text
+                  },
+                  le
+                )
+              )
+            }
+          ),
+          /* @__PURE__ */ E(
+            et,
+            {
+              title: To,
+              open: Co,
+              placement: "top-start",
+              arrow: !0,
+              componentsProps: {
+                tooltip: {
+                  sx: ye ? {
+                    bgcolor: "error.main",
+                    color: "error.contrastText",
+                    fontSize: "0.75rem",
+                    maxWidth: 360,
+                    ...x
+                  } : {
+                    bgcolor: "info.dark",
+                    color: "common.white",
+                    fontSize: "0.75rem",
+                    maxWidth: 360,
+                    ...S
                   }
                 },
-                // Keep the trailing adornment (icons + Apply button) flush to
-                // the right edge of the input without extra horizontal padding.
-                "& .MuiInputAdornment-positionEnd": {
-                  marginLeft: 0
-                },
-                ...g
+                arrow: {
+                  sx: ye ? {
+                    color: "error.main",
+                    ...(x == null ? void 0 : x.bgcolor) && {
+                      color: x.bgcolor
+                    }
+                  } : {
+                    color: "info.dark",
+                    ...(S == null ? void 0 : S.bgcolor) && {
+                      color: S.bgcolor
+                    }
+                  }
+                }
               },
-              inputRef: ge,
-              inputProps: { onScroll: Ct },
-              value: N,
-              onChange: Tt,
-              onFocus: () => me(ge.current),
-              onBlur: () => setTimeout(() => me(null), 100),
-              error: N ? !z : !1,
-              endAdornment: /* @__PURE__ */ E(Mo, { position: "end", children: /* @__PURE__ */ ee(
-                se,
+              children: /* @__PURE__ */ E(
+                Do,
                 {
-                  ref: it,
+                  ...d,
+                  placeholder: s,
                   sx: {
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 0.5,
-                    ...I
+                    width: "100%",
+                    backgroundColor: "transparent",
+                    "& .MuiOutlinedInput-input": {
+                      // Make the real text invisible so only the colored mirror
+                      // shows through. `caret-color` must be a concrete color (not
+                      // `currentColor`, which would resolve to `transparent` here
+                      // and hide the cursor). We pick the theme's primary text color
+                      // so the caret stays visible in both light and dark themes.
+                      color: "transparent",
+                      caretColor: (V) => V.palette.text.primary,
+                      "&::placeholder": {
+                        color: "text.secondary",
+                        opacity: 0.7
+                      }
+                    },
+                    // Keep the trailing adornment (icons + Apply button) flush to
+                    // the right edge of the input without extra horizontal padding.
+                    "& .MuiInputAdornment-positionEnd": {
+                      marginLeft: 0
+                    },
+                    ...g
                   },
-                  children: [
-                    /* @__PURE__ */ E(
-                      et,
-                      {
-                        title: "Query syntax help",
-                        placement: "top",
-                        sx: O,
-                        children: /* @__PURE__ */ E(
-                          ze,
+                  inputRef: ge,
+                  inputProps: { onScroll: Ct },
+                  value: N,
+                  onChange: Tt,
+                  onFocus: () => me(ge.current),
+                  onBlur: () => setTimeout(() => me(null), 100),
+                  error: N ? !z : !1,
+                  endAdornment: /* @__PURE__ */ E(Mo, { position: "end", children: /* @__PURE__ */ ee(
+                    se,
+                    {
+                      ref: it,
+                      sx: {
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 0.5,
+                        ...I
+                      },
+                      children: [
+                        /* @__PURE__ */ E(
+                          et,
                           {
-                            onClick: () => H(!0),
-                            "aria-label": "Query syntax help",
-                            size: "small",
-                            edge: a ? !1 : "end",
+                            title: "Query syntax help",
+                            placement: "top",
+                            sx: O,
+                            children: /* @__PURE__ */ E(
+                              ze,
+                              {
+                                onClick: () => H(!0),
+                                "aria-label": "Query syntax help",
+                                size: "small",
+                                edge: a ? !1 : "end",
+                                onMouseDown: (V) => V.preventDefault(),
+                                sx: T,
+                                children: /* @__PURE__ */ E(Cl, { fontSize: "small" })
+                              }
+                            )
+                          }
+                        ),
+                        a,
+                        /* @__PURE__ */ E(
+                          Ft,
+                          {
+                            disabled: !N || !z,
+                            onClick: () => r(N),
                             onMouseDown: (V) => V.preventDefault(),
-                            sx: T,
-                            children: /* @__PURE__ */ E(Cl, { fontSize: "small" })
+                            size: "small",
+                            sx: u,
+                            children: "Apply"
                           }
                         )
-                      }
-                    ),
-                    a,
-                    /* @__PURE__ */ E(
-                      Ft,
-                      {
-                        disabled: !N || !z,
-                        onClick: () => r(N),
-                        onMouseDown: (V) => V.preventDefault(),
-                        size: "small",
-                        sx: u,
-                        children: "Apply"
-                      }
-                    )
-                  ]
+                      ]
+                    }
+                  ) })
                 }
-              ) })
+              )
             }
           )
-        }
-      )
-    ] }) }),
+        ]
+      }
+    ) }),
     /* @__PURE__ */ E(
       Bo,
       {
@@ -7511,18 +7553,14 @@ function Ul({
     popoverContent: h,
     title: y,
     queryForm: g
-  } = i, [u, T] = xe(null), [O, I] = xe(null), [x, S] = xe(
-    e
-  );
+  } = i, [u, T] = xe(null), [O, I] = xe(null), [x, S] = xe(e);
   dt(() => {
     S(e);
   }, [e]);
   const b = Ze(
     () => Array.from(
       /* @__PURE__ */ new Set([
-        ...Object.values(e).flatMap(
-          ($) => ($ == null ? void 0 : $.operators) || []
-        ),
+        ...Object.values(e).flatMap(($) => ($ == null ? void 0 : $.operators) || []),
         ...n || []
       ])
     ),
