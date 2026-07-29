@@ -4,7 +4,11 @@ import TuneIcon from "@mui/icons-material/Tune";
 import { IconButton, Box, Typography } from "@mui/material";
 import QueryForm from "./QueryForm";
 import QueryTextBox from "./QueryTextBox";
-import { parseQuery } from "./helpers";
+import {
+  parseQuery,
+  flattenGroupToQueries,
+  convertGroupToText,
+} from "./helpers";
 
 export default function QueryBuilder({
   columnsOperator = {},
@@ -14,10 +18,6 @@ export default function QueryBuilder({
   placeholder = "",
   sx = {},
 }) {
-  // Pull named slots out of `sx` so callers can target individual parts of
-  // the component, e.g. sx={{ root: {...}, popover: {...} }}.
-  // The `textBox` and `queryForm` slots are themselves slot maps forwarded
-  // to QueryTextBox and QueryForm respectively.
   const {
     root: rootSx,
     textBoxContainer: textBoxContainerSx,
@@ -31,35 +31,24 @@ export default function QueryBuilder({
   } = sx;
 
   const [anchorEl, setAnchorEl] = useState(null);
-  const [queries, setQueries] = useState([]);
-  const [defaultOperator, setDefaultOperator] = useState("AND");
+  const [groupTree, setGroupTree] = useState(null);
 
-  // Local, extendable copy of `columnsOperator`. When the user types a column
-  // in the free-text box that is NOT in the prop, we register it here with
-  // all available operators so the QueryForm table can show it as a column.
-  const [dynamicColumnsOperator, setDynamicColumnsOperator] = useState(
-    columnsOperator
-  );
+  const [dynamicColumnsOperator, setDynamicColumnsOperator] =
+    useState(columnsOperator);
 
-  // If the caller supplies a new `columnsOperator` prop, reset our local copy.
   useEffect(() => {
     setDynamicColumnsOperator(columnsOperator);
   }, [columnsOperator]);
 
-  // Union of every per-column operator + `relatedOperators`. Used as the
-  // operator list assigned to new (custom) columns so they support every
-  // operator known to the builder.
   const allAvailableOperators = useMemo(
     () =>
       Array.from(
         new Set([
-          ...Object.values(columnsOperator).flatMap(
-            (c) => c?.operators || []
-          ),
+          ...Object.values(columnsOperator).flatMap((c) => c?.operators || []),
           ...(relatedOperators || []),
-        ])
+        ]),
       ),
-    [columnsOperator, relatedOperators]
+    [columnsOperator, relatedOperators],
   );
 
   const handleClick = (event) => {
@@ -70,13 +59,10 @@ export default function QueryBuilder({
     setAnchorEl(null);
   };
 
-  const onApplyClicked = (value) => {
-    const knownColumns = Object.keys(dynamicColumnsOperator);
-    const _queries = parseQuery(value, allAvailableOperators, knownColumns);
-
-    // Register any column referenced in the query that is not yet known.
+  const registerNewColumns = (tree) => {
+    const flatRules = flattenGroupToQueries(tree);
     const newColumns = {};
-    _queries.forEach((q) => {
+    flatRules.forEach((q) => {
       if (
         q.column &&
         !dynamicColumnsOperator[q.column] &&
@@ -88,23 +74,31 @@ export default function QueryBuilder({
     if (Object.keys(newColumns).length) {
       setDynamicColumnsOperator((prev) => ({ ...prev, ...newColumns }));
     }
+  };
 
-    const globalOperator =
-      defaultOperators.find((operator) => value.includes(` ${operator} `)) ||
-      null;
-    setQueries(_queries);
+  const onApplyClicked = (value) => {
+    const knownColumns = Object.keys(dynamicColumnsOperator);
+    const tree = parseQuery(value, allAvailableOperators, knownColumns);
+    registerNewColumns(tree);
+    setGroupTree(tree);
     if (handleApply) {
-      handleApply(_queries, globalOperator);
+      handleApply(tree);
     }
   };
 
-  const handleApplyFilters = (globalOperator, _queries) => {
-    setDefaultOperator(globalOperator);
-    setQueries(_queries);
+  const handleApplyFilters = (tree) => {
+    registerNewColumns(tree);
+    setGroupTree(tree);
+    handleClose();
     if (handleApply) {
-      handleApply(_queries, globalOperator);
+      handleApply(tree);
     }
   };
+
+  const queryText = useMemo(
+    () => (groupTree ? convertGroupToText(groupTree) : ""),
+    [groupTree],
+  );
 
   const open = Boolean(anchorEl);
   const id = open ? "simple-popover" : undefined;
@@ -118,13 +112,11 @@ export default function QueryBuilder({
         width="100%"
         sx={textBoxContainerSx}
       >
-        {/* use this text box to build the query upon user selection from input suggestions */}
         <QueryTextBox
           columnsOperator={dynamicColumnsOperator}
           defaultOperators={defaultOperators}
           onApplyClicked={onApplyClicked}
-          defaultValues={queries}
-          defaultOperator={defaultOperator}
+          queryText={queryText}
           relatedOperators={relatedOperators}
           placeholder={placeholder}
           sx={textBoxSx}
@@ -133,8 +125,6 @@ export default function QueryBuilder({
               aria-describedby={id}
               onClick={handleClick}
               size="small"
-              // Prevent the input from blurring (and closing the suggestion
-              // popper) when the user clicks the gear icon.
               onMouseDown={(e) => e.preventDefault()}
               sx={iconButtonSx}
             >
@@ -153,18 +143,9 @@ export default function QueryBuilder({
           vertical: "bottom",
           horizontal: "left",
         }}
-        // Constrain the floating paper so it never spills off-screen on
-        // narrow viewports. `calc(100vw - 32px)` leaves a 16px gutter on each
-        // side, and `maxHeight` + scroll lets long forms fit on short screens.
-        // Callers can override or extend any of these via `sx.popoverPaper`.
         slotProps={{
           paper: {
             sx: {
-              // Mobile: hug the viewport with a 16px gutter on each side.
-              // Tablet/desktop: ask for an explicit `width` (not just a cap)
-              // so the paper actually expands to give the three row controls
-              // (Column / Operator / Value) generous, equal space instead of
-              // collapsing around its content.
               width: {
                 xs: "calc(100vw - 32px)",
                 sm: 720,
@@ -190,8 +171,7 @@ export default function QueryBuilder({
             columnsOperator={dynamicColumnsOperator}
             handleApplyFilters={handleApplyFilters}
             defaultOperators={defaultOperators}
-            defaultValues={queries}
-            defaultOperator={defaultOperator}
+            groupTree={groupTree}
             sx={queryFormSx}
           />
         </Box>

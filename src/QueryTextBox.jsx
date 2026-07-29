@@ -20,22 +20,19 @@ import {
 import HelpOutlineIcon from "@mui/icons-material/HelpOutline";
 import CloseIcon from "@mui/icons-material/Close";
 import { useState, useRef, useEffect, useMemo } from "react";
-import {
-  convertQueriesToText,
-  validateQuery,
-  escapeRegex,
-  tokenizeQuery,
-} from "./helpers";
+import { useTheme } from "@mui/material/styles";
+import { validateQuery, tokenizeQuery } from "./helpers";
 
 // Default highlight palette per token type. Callers can override any of these
 // via sx.tokenColors (see README "Token Highlighting").
 const DEFAULT_TOKEN_COLORS = {
-  column: "#1976d2", // blue   – known column
-  customColumn: "#0288d1", // light blue – custom/unknown column
-  operator: "#d32f2f", // red    – related operator
-  unknownOperator: "#9e9e9e", // grey   – not (yet) a valid operator
-  logical: "#7b1fa2", // purple – AND / OR
-  value: "inherit",
+  column: "primary.main",
+  customColumn: "info.main",
+  operator: "error.main",
+  unknownOperator: "text.disabled",
+  logical: "secondary.main",
+  paren: "warning.main",
+  value: "text.primary",
 };
 
 // Default font weights per token type. Callers can override any of these via
@@ -46,6 +43,7 @@ const DEFAULT_TOKEN_FONT_WEIGHTS = {
   operator: 600,
   unknownOperator: 400,
   logical: 600,
+  paren: 700,
   value: 400,
 };
 
@@ -110,8 +108,8 @@ const HelpModal = ({ open, onClose, sx = {} }) => {
           The query search box lets you filter data using a simple, readable
           query language. Type your conditions directly into the search field
           and press <strong>Apply</strong> to run the query. Suggestions will
-          appear as you type to guide you through valid columns, operators,
-          and logical connectors.
+          appear as you type to guide you through valid columns, operators, and
+          logical connectors.
         </Typography>
 
         <Divider sx={{ my: 2, ...dividerSx }} />
@@ -197,8 +195,8 @@ const HelpModal = ({ open, onClose, sx = {} }) => {
             gutterBottom
             sx={listItemSx}
           >
-            <strong>value</strong> — what you are comparing against. Wrap
-            values that contain spaces in double quotes:{" "}
+            <strong>value</strong> — what you are comparing against. Wrap values
+            that contain spaces in double quotes:{" "}
             <Chip
               label={`"John Doe"`}
               size="small"
@@ -237,14 +235,81 @@ const HelpModal = ({ open, onClose, sx = {} }) => {
           {`condition1 AND condition2 AND condition3
 condition1 OR  condition2`}
         </Box>
-        <Typography
-          variant="body2"
-          sx={{ color: "error.main", ...warningTextSx }}
-          paragraph
-        >
-          ⚠ You cannot mix <strong>AND</strong> and <strong>OR</strong> in the
-          same query. Pick one logical operator and use it consistently.
+
+        <Typography variant="h6" gutterBottom sx={sectionTitleSx}>
+          Grouping with Parentheses
         </Typography>
+        <Typography variant="body2" paragraph sx={bodySx}>
+          You can mix <strong>AND</strong> and <strong>OR</strong> in the same
+          query by using parentheses <strong>( )</strong> to group conditions:
+        </Typography>
+        <Box
+          component="pre"
+          sx={{
+            bgcolor: "grey.100",
+            borderLeft: 4,
+            borderColor: "primary.main",
+            px: 2,
+            py: 1.5,
+            borderRadius: 1,
+            overflowX: "auto",
+            mb: 2,
+            fontFamily: "monospace",
+            fontSize: "0.875rem",
+            ...codeBlockSx,
+          }}
+        >
+          {`name == "John" AND (status == active OR status == pending)
+(price > 100 AND price < 500) OR category == sale`}
+        </Box>
+        <Typography variant="body2" paragraph sx={bodySx}>
+          Without parentheses, <strong>AND</strong> binds tighter than{" "}
+          <strong>OR</strong>:
+        </Typography>
+        <Box
+          component="pre"
+          sx={{
+            bgcolor: "grey.100",
+            borderLeft: 4,
+            borderColor: "primary.main",
+            px: 2,
+            py: 1.5,
+            borderRadius: 1,
+            overflowX: "auto",
+            mb: 2,
+            fontFamily: "monospace",
+            fontSize: "0.875rem",
+            ...codeBlockSx,
+          }}
+        >
+          {`a = 1 OR b = 2 AND c = 3
+// is the same as: a = 1 OR (b = 2 AND c = 3)`}
+        </Box>
+
+        <Typography variant="h6" gutterBottom sx={sectionTitleSx}>
+          NOT (Negation)
+        </Typography>
+        <Typography variant="body2" paragraph sx={bodySx}>
+          Prefix a group with <strong>NOT</strong> to negate it:
+        </Typography>
+        <Box
+          component="pre"
+          sx={{
+            bgcolor: "grey.100",
+            borderLeft: 4,
+            borderColor: "primary.main",
+            px: 2,
+            py: 1.5,
+            borderRadius: 1,
+            overflowX: "auto",
+            mb: 2,
+            fontFamily: "monospace",
+            fontSize: "0.875rem",
+            ...codeBlockSx,
+          }}
+        >
+          {`NOT (status == inactive OR status == deleted)`}
+        </Box>
 
         <Divider sx={{ my: 2, ...dividerSx }} />
 
@@ -275,8 +340,16 @@ condition1 OR  condition2`}
             code: `status == active OR status == pending`,
           },
           {
-            label: "Date range",
-            code: `created_at after 2024-01-01 AND created_at before 2024-12-31`,
+            label: "Mixed AND/OR with grouping",
+            code: `name == "Alice" AND (status == active OR status == pending)`,
+          },
+          {
+            label: "Nested groups",
+            code: `(price > 100 AND price < 500) OR (category == sale AND stock > 0)`,
+          },
+          {
+            label: "NOT negation",
+            code: `NOT (status == deleted OR status == archived)`,
           },
         ].map(({ label, code }) => (
           <Box key={label} mb={1.5}>
@@ -323,9 +396,12 @@ condition1 OR  condition2`}
             "Start typing a column name and select it from the suggestion list.",
             "After picking a column, the suggestion list will show valid operators for that column.",
             "After entering a value, AND / OR will appear in the suggestion list.",
+            "Use parentheses ( ) to group conditions when mixing AND and OR.",
+            "Prefix a group with NOT to negate it — e.g. NOT (status == deleted).",
             'Wrap multi-word values in double quotes — e.g. "John Doe".',
+            "AND has higher precedence than OR. Use parentheses to override.",
             "Syntax errors are highlighted in the text box. Hover the input to see the specific error.",
-            "You can also build queries using the advanced filter panel (click the ⊟ icon).",
+            "You can also build queries visually using the filter panel (click the tune icon).",
           ].map((tip) => (
             <Typography
               key={tip}
@@ -351,24 +427,29 @@ condition1 OR  condition2`}
         </Typography>
         <Box component="ul" sx={{ mt: 0, mb: 1, pl: 3, ...listSx }}>
           {[
-            { color: "#1976d2", label: "Blue", desc: "Known column" },
+            { color: "primary.main", label: "Blue", desc: "Known column" },
             {
-              color: "#0288d1",
+              color: "info.main",
               label: "Light blue",
               desc: "Custom / unknown column",
             },
-            { color: "#d32f2f", label: "Red", desc: "Valid operator" },
+            { color: "error.main", label: "Red", desc: "Valid operator" },
             {
-              color: "#9e9e9e",
+              color: "text.disabled",
               label: "Grey",
               desc: "Unrecognized operator (still typing)",
             },
             {
-              color: "#7b1fa2",
+              color: "secondary.main",
               label: "Purple",
-              desc: "Logical connector — AND / OR",
+              desc: "Logical connector — AND / OR / NOT",
             },
-            { color: "inherit", label: "Default", desc: "Value" },
+            {
+              color: "warning.main",
+              label: "Orange",
+              desc: "Parentheses ( )",
+            },
+            { color: "text.primary", label: "Default", desc: "Value" },
           ].map(({ color, label, desc }) => (
             <Typography
               key={label}
@@ -384,17 +465,15 @@ condition1 OR  condition2`}
                   width: 12,
                   height: 12,
                   borderRadius: "50%",
-                  bgcolor: color === "inherit" ? "text.primary" : color,
+                  bgcolor: color,
                   mr: 1,
                   verticalAlign: "middle",
                   ...colorSwatchSx,
                 }}
               />
-              <strong
-                style={{ color: color === "inherit" ? undefined : color }}
-              >
+              <Box component="strong" sx={{ color }}>
                 {label}
-              </strong>{" "}
+              </Box>{" "}
               — {desc}
             </Typography>
           ))}
@@ -423,8 +502,7 @@ const QueryTextBox = ({
   onSuggestionClick,
   defaultOperators,
   onApplyClicked,
-  defaultValues,
-  defaultOperator,
+  queryText,
   relatedOperators,
   placeholder = "",
   endAdornment,
@@ -460,7 +538,7 @@ const QueryTextBox = ({
   // only the colors they care about.
   const tokenColors = useMemo(
     () => ({ ...DEFAULT_TOKEN_COLORS, ...(tokenColorsOverride || {}) }),
-    [tokenColorsOverride]
+    [tokenColorsOverride],
   );
 
   // Same merge strategy for per-token font weights.
@@ -469,8 +547,28 @@ const QueryTextBox = ({
       ...DEFAULT_TOKEN_FONT_WEIGHTS,
       ...(tokenFontWeightsOverride || {}),
     }),
-    [tokenFontWeightsOverride]
+    [tokenFontWeightsOverride],
   );
+
+  const theme = useTheme();
+  const resolveColor = (color) => {
+    if (!color || color === "inherit") return "inherit";
+    const parts = color.split(".");
+    let val = theme.palette;
+    for (const p of parts) {
+      val = val?.[p];
+      if (val === undefined) return color;
+    }
+    return typeof val === "string" ? val : color;
+  };
+
+  const resolvedTokenColors = useMemo(() => {
+    const resolved = {};
+    for (const key of Object.keys(tokenColors)) {
+      resolved[key] = resolveColor(tokenColors[key]);
+    }
+    return resolved;
+  }, [tokenColors, theme]);
 
   const [anchorEl, setAnchorEl] = useState(null);
   const [suggestions, setSuggestions] = useState([]);
@@ -489,16 +587,10 @@ const QueryTextBox = ({
   const adornmentRef = useRef(null);
 
   useEffect(() => {
-    if (
-      defaultValues &&
-      Array.isArray(defaultValues) &&
-      defaultValues.length &&
-      defaultOperator
-    ) {
-      const query = convertQueriesToText(defaultValues, defaultOperator);
-      setInputValue(query);
+    if (queryText !== undefined && queryText !== null) {
+      setInputValue(queryText);
     }
-  }, [defaultOperator, defaultValues]);
+  }, [queryText]);
 
   useEffect(() => {
     const columns = Object.keys(columnsOperator);
@@ -511,7 +603,7 @@ const QueryTextBox = ({
       new Set([
         ...columns.flatMap((col) => columnsOperator[col]?.operators || []),
         ...(relatedOperators || []),
-      ])
+      ]),
     );
 
     const words = inputValue.trim().split(/\s+/).filter(Boolean);
@@ -525,8 +617,12 @@ const QueryTextBox = ({
 
     let nextSuggestions;
 
-    if (!inputValue.trim() || defaultOperators.includes(lastWord)) {
-      // Empty input or right after AND/OR → suggest known columns as starting hints
+    if (
+      !inputValue.trim() ||
+      defaultOperators.includes(lastWord) ||
+      lastWord === "("
+    ) {
+      // Empty input or right after AND/OR or ( → suggest known columns as starting hints
       nextSuggestions = columns;
     } else if (columns.includes(lastWord)) {
       // Known column just typed → suggest its specific operators
@@ -551,18 +647,9 @@ const QueryTextBox = ({
     setSuggestions(nextSuggestions);
     setFilteredSuggestions(nextSuggestions);
 
-    // Validation regex: a column can be ANY non-whitespace token,
-    // not just one of the keys defined in `columnsOperator`. Operators
-    // accepted include both relatedOperators and the union derived above.
-    const operatorAlternation = allAvailableOperators
-      .map(escapeRegex)
-      .join("|");
-    const _queryRegex = new RegExp(
-      `^(\\S+)\\s+(${operatorAlternation})\\s+(".+?"|\\S+)` +
-        `(?:\\s+(AND|OR)\\s+(\\S+)\\s+(${operatorAlternation})\\s+(".+?"|\\S+))*$`,
-      "i"
-    );
-    const result = validateQuery(inputValue, _queryRegex);
+    // Validation now supports mixed AND/OR with parentheses grouping.
+    // The regex param is no longer used — validateQuery handles it internally.
+    const result = validateQuery(inputValue, null);
     setIsValid(result.isValid);
     setValidationError(result.error);
   }, [inputValue, columnsOperator, defaultOperators, relatedOperators]);
@@ -586,8 +673,8 @@ const QueryTextBox = ({
     setInputValue(value);
     setFilteredSuggestions(
       suggestions.filter((suggestion) =>
-        suggestion.toLowerCase().includes(value.toLowerCase())
-      )
+        suggestion.toLowerCase().includes(value.toLowerCase()),
+      ),
     );
     setAnchorEl(inputRef.current);
   };
@@ -610,14 +697,14 @@ const QueryTextBox = ({
         Array.from(
           new Set([
             ...Object.values(columnsOperator || {}).flatMap(
-              (c) => c?.operators || []
+              (c) => c?.operators || [],
             ),
             ...(relatedOperators || []),
-          ])
+          ]),
         ),
-        defaultOperators || []
+        defaultOperators || [],
       ),
-    [inputValue, columnsOperator, relatedOperators, defaultOperators]
+    [inputValue, columnsOperator, relatedOperators, defaultOperators],
   );
 
   const handleSuggestionClick = (suggestion) => {
@@ -649,8 +736,12 @@ const QueryTextBox = ({
 
   // Tooltip content: error message when invalid, usage hint when the field is
   // empty so first-time users know what to type.
-  const tooltipTitle = showError ? validationError : (!inputValue ? HINT_TEXT : "");
-  const tooltipOpen = showError ? undefined : (!inputValue ? undefined : false);
+  const tooltipTitle = showError
+    ? validationError
+    : !inputValue
+      ? HINT_TEXT
+      : "";
+  const tooltipOpen = showError ? undefined : !inputValue ? undefined : false;
 
   return (
     <Box width="100%" sx={rootSx}>
@@ -662,7 +753,9 @@ const QueryTextBox = ({
           line up pixel-perfectly. Caret/selection still come from the real
           input — we only paint colors underneath.
         */}
-        <Box sx={{ position: "relative", flex: 1, minWidth: 0, ...inputWrapperSx }}>
+        <Box
+          sx={{ position: "relative", flex: 1, minWidth: 0, ...inputWrapperSx }}
+        >
           <Box
             ref={highlightRef}
             aria-hidden="true"
@@ -683,7 +776,7 @@ const QueryTextBox = ({
               // Must be scrollable so `scrollLeft` syncs with the real input,
               // but the scrollbar should stay invisible to users.
               overflow: "auto",
-              scrollbarWidth: "none",          // Firefox
+              scrollbarWidth: "none", // Firefox
               "&::-webkit-scrollbar": { display: "none" }, // Chrome / Safari
               pointerEvents: "none",
               color: "transparent",
@@ -698,7 +791,7 @@ const QueryTextBox = ({
                 <span
                   key={i}
                   style={{
-                    color: tokenColors[tok.type] || "inherit",
+                    color: resolvedTokenColors[tok.type] || "inherit",
                     fontWeight:
                       tokenFontWeights[tok.type] ??
                       DEFAULT_TOKEN_FONT_WEIGHTS[tok.type] ??
@@ -707,7 +800,7 @@ const QueryTextBox = ({
                 >
                   {tok.text}
                 </span>
-              )
+              ),
             )}
           </Box>
           <Tooltip
@@ -736,8 +829,18 @@ const QueryTextBox = ({
               },
               arrow: {
                 sx: showError
-                  ? { color: "error.main", ...(errorTooltipSx?.bgcolor && { color: errorTooltipSx.bgcolor }) }
-                  : { color: "info.dark", ...(hintTooltipSx?.bgcolor && { color: hintTooltipSx.bgcolor }) },
+                  ? {
+                      color: "error.main",
+                      ...(errorTooltipSx?.bgcolor && {
+                        color: errorTooltipSx.bgcolor,
+                      }),
+                    }
+                  : {
+                      color: "info.dark",
+                      ...(hintTooltipSx?.bgcolor && {
+                        color: hintTooltipSx.bgcolor,
+                      }),
+                    },
               },
             }}
           >

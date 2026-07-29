@@ -2,17 +2,21 @@
 
 ## Overview
 
-The `QueryBuilder` component helps users build complex search queries using an intuitive UI. It allows selecting columns, operators, and values, and combines them with logical operators like `AND` or `OR`.
+The `QueryBuilder` component helps users build complex search queries using an intuitive UI. It supports nested groups with mixed `AND`/`OR` logic, `NOT` negation, and parenthesized sub-expressions — all through both a free-text input and a visual form builder.
 
 ---
 
 ## Features
 
-- **Interactive Query Builder**: Create queries by selecting columns, operators, and values.
-- **Popover Interface**: Advanced filters are managed in a simple popover UI.
+- **Nested Group Builder**: Create groups of conditions with independent AND/OR combinators and NOT negation.
+- **Mixed AND/OR**: Combine `AND` and `OR` in a single query using parentheses for grouping.
+- **Free-Text Input**: Type queries directly with syntax highlighting, autocomplete suggestions, and validation.
+- **Visual Form Builder**: Build queries visually via a popover with group/rule management.
+- **Bidirectional Sync**: Changes in the text box reflect in the form, and vice versa.
 - **Customizable**: Define columns and their valid operators.
-- **Fully Styleable**: Every visual element — including the advanced-filter form, the help modal, validation tooltips, and the syntax-highlight overlay — can be styled via the `sx` slot map.
-- **Callback Support**: Trigger a function when the query is applied.
+- **Theme-Aware**: Token colors resolve from the MUI theme palette — works in both light and dark mode out of the box.
+- **Fully Styleable**: Every visual element can be styled via the `sx` slot map.
+- **Callback Support**: Trigger a function with the full query tree when applied.
 
 ---
 
@@ -35,7 +39,7 @@ yarn add query-builder-react @mui/material @mui/icons-material @emotion/react @e
 
 ## Usage
 
-#### Example:
+#### Basic Example:
 
 ```js
 import React from "react";
@@ -49,8 +53,8 @@ const columnsOperator = {
 };
 
 export default function App() {
-  const handleApply = (queries) => {
-    console.log("Generated Queries:", queries);
+  const handleApply = (groupTree) => {
+    console.log("Query tree:", groupTree);
   };
   return (
     <QueryBuilder
@@ -69,12 +73,100 @@ export default function App() {
         "after",
         "exact",
       ]}
-      placeholder='e.g. name contains "John" AND duration > 30'
+      placeholder='e.g. name contains "John" AND (duration > 30 OR status == active)'
       handleApply={handleApply}
     />
   );
 }
 ```
+
+---
+
+## Query Syntax
+
+The free-text input supports the following syntax:
+
+```
+<column> <operator> <value> [AND|OR <column> <operator> <value>]...
+```
+
+### Parentheses & Mixed Logic
+
+You can mix `AND` and `OR` using parentheses to control precedence:
+
+```
+name contains "John" AND (status == active OR status == pending)
+Trademark = Audi AND (Cylinders = 4 OR Doors = 2)
+```
+
+Without parentheses, `AND` binds tighter than `OR`:
+
+```
+a = 1 OR b = 2 AND c = 3
+// is parsed as: a = 1 OR (b = 2 AND c = 3)
+```
+
+### NOT Negation
+
+Prefix a group with `NOT` to negate it:
+
+```
+NOT (status == inactive OR status == deleted)
+```
+
+---
+
+## Query Tree Structure
+
+The `handleApply` callback receives a recursive group tree:
+
+```js
+{
+  type: "group",
+  combinator: "AND",  // "AND" | "OR"
+  not: false,         // true if negated
+  rules: [
+    { type: "rule", column: "Trademark", operator: "=", value: "Audi" },
+    {
+      type: "group",
+      combinator: "OR",
+      not: false,
+      rules: [
+        { type: "rule", column: "Cylinders", operator: "=", value: "4" },
+        { type: "rule", column: "Doors", operator: "=", value: "2" },
+      ]
+    }
+  ]
+}
+```
+
+### Helper Utilities
+
+The package exports helper functions for working with the tree:
+
+```js
+import { flattenGroupToQueries, convertGroupToText } from "query-builder-react/helpers";
+
+// Flatten to a simple array of {column, operator, value}
+const flat = flattenGroupToQueries(groupTree);
+
+// Serialize back to a human-readable string
+const text = convertGroupToText(groupTree);
+// → 'Trademark = Audi AND (Cylinders = 4 OR Doors = 2)'
+```
+
+---
+
+## Visual Query Builder (Form)
+
+The popover form supports:
+
+- **Groups with NOT / AND / OR**: Each group has a NOT toggle and an AND/OR combinator selector.
+- **Nested sub-groups**: Click the circled `+` button to add a sub-group within any group.
+- **Add/delete rules**: Use `+` to add rules, `×` to remove them.
+- **Search/Cancel**: Apply the built query or dismiss.
+
+Changes made in the form automatically sync to the text input, and vice versa.
 
 ---
 
@@ -85,15 +177,15 @@ export default function App() {
 | `columnsOperator`  | `object`   | `{}`        | Defines columns and their valid operators.                   |
 | `defaultOperators` | `string[]` | `[]`        | Logical operators for combining queries (e.g., `AND`, `OR`). |
 | `relatedOperators` | `string[]` | `[]`        | List of valid operators for the query builder.               |
-| `handleApply`      | `function` | `undefined` | Callback triggered with the generated query when applied.    |
-| `placeholder`      | `string`   | `""`        | Placeholder text shown inside the query text box when empty. Forwarded to the inner `QueryTextBox`. |
-| `sx`               | `object`   | `{}`        | Style overrides for individual slots of the component. See [Custom Styling](#custom-styling). |
+| `handleApply`      | `function` | `undefined` | Callback triggered with the group tree when applied.         |
+| `placeholder`      | `string`   | `""`        | Placeholder text shown inside the query text box when empty. |
+| `sx`               | `object`   | `{}`        | Style overrides for individual slots. See [Custom Styling](#custom-styling). |
 
 ---
 
 ## Custom Styling
 
-The `QueryBuilder` component is fully styleable from the outside through the `sx` prop. Instead of accepting a single style object, `sx` is a **slot map**: each key targets a specific part of the rendered tree, and its value is any valid MUI [`sx`](https://mui.com/system/getting-started/the-sx-prop/) value (object, function, or array).
+The `QueryBuilder` component is fully styleable from the outside through the `sx` prop. Instead of accepting a single style object, `sx` is a **slot map**: each key targets a specific part of the rendered tree, and its value is any valid MUI [`sx`](https://mui.com/system/getting-started/the-sx-prop/) value.
 
 ### QueryBuilder Slots
 
@@ -113,8 +205,6 @@ The `QueryBuilder` component is fully styleable from the outside through the `sx
 
 #### Text Box Slots
 
-The free-text query builder (`QueryTextBox`) exposes its own slot map, which you can drive either through `sx.textBox` from `QueryBuilder` or directly via the `sx` prop when using `QueryTextBox` standalone.
-
 | **Slot**            | **Targets**                                                          |
 | ------------------- | -------------------------------------------------------------------- |
 | `root`              | The outer wrapper `Box` of `QueryTextBox`.                           |
@@ -122,14 +212,14 @@ The free-text query builder (`QueryTextBox`) exposes its own slot map, which you
 | `inputWrapper`      | The relative-positioned wrapper that holds the highlight overlay + input. |
 | `highlightOverlay`  | The transparent `Box` that paints colored tokens behind the input.   |
 | `input`             | The `OutlinedInput` field.                                           |
-| `adornmentBox`      | The flex `Box` inside the input's end adornment (holds help icon, custom adornment, Apply button). |
+| `adornmentBox`      | The flex `Box` inside the input's end adornment.                     |
 | `helpButton`        | The help (?) `IconButton`.                                           |
 | `helpTooltip`       | The `Tooltip` wrapping the help icon.                                |
 | `applyButton`       | The Apply `Button`.                                                  |
-| `errorTooltip`      | The validation-error `Tooltip` shown for invalid queries. Override `bgcolor`, `color`, etc. |
+| `errorTooltip`      | The validation-error `Tooltip` shown for invalid queries.            |
 | `hintTooltip`       | The hint `Tooltip` shown for an empty input.                         |
 | `popper`            | The suggestions `Popper`.                                            |
-| `suggestionsBox`    | The `Box` rendered inside the popper (border / background wrapper).  |
+| `suggestionsBox`    | The `Box` rendered inside the popper.                                |
 | `suggestionsList`   | The `List` of suggestions.                                           |
 | `suggestionItem`    | Each `ListItemButton` inside the suggestions list.                   |
 | `suggestionText`    | The `Typography` displaying each suggestion's text.                  |
@@ -139,22 +229,20 @@ The free-text query builder (`QueryTextBox`) exposes its own slot map, which you
 
 ##### Token Highlighting
 
-As the user types, `QueryTextBox` parses the input into typed tokens and paints each one in a distinct color through a transparent overlay. You can override any/all of the default colors via `sx.textBox.tokenColors` (or `sx.tokenColors` when using `QueryTextBox` directly). Any CSS color value is accepted (`"red"`, `"#1976d2"`, `"rgb(...)"`, theme colors via callbacks, etc.).
+As the user types, `QueryTextBox` parses the input into typed tokens and paints each one in a distinct color. Colors default to MUI theme palette tokens, so they adapt to light/dark mode automatically. You can override via `sx.textBox.tokenColors`.
 
-| **Token Type**     | **Default Color** | **When It's Used**                                            |
-| ------------------ | ----------------- | ------------------------------------------------------------- |
-| `column`           | `#1976d2` (blue)   | Token at a column position that matches one of the configured columns. |
-| `customColumn`     | `#0288d1` (light blue) | Token at a column position that is not in the configured columns. |
-| `operator`         | `#d32f2f` (red)    | Token at the operator slot that matches a known related operator. |
-| `unknownOperator`  | `#9e9e9e` (grey)   | Token at the operator slot that does not match any known operator (yet). |
-| `logical`          | `#7b1fa2` (purple) | The separator between queries — `AND` / `OR`.                |
-| `value`            | `inherit`          | The right-hand side value token.                             |
+| **Token Type**     | **Default Color**        | **When It's Used**                                            |
+| ------------------ | ------------------------ | ------------------------------------------------------------- |
+| `column`           | `primary.main`           | Token matching a configured column.                           |
+| `customColumn`     | `info.main`              | Token at column position that is not in configured columns.   |
+| `operator`         | `error.main`             | Token matching a known operator.                              |
+| `unknownOperator`  | `text.disabled`          | Token at operator slot that doesn't match any known operator. |
+| `logical`          | `secondary.main`         | Logical connectors — `AND` / `OR` / `NOT`.                   |
+| `paren`            | `warning.main`           | Parentheses `(` and `)`.                                      |
+| `value`            | `text.primary`           | The right-hand side value token.                              |
 
 ```jsx
 <QueryBuilder
-  columnsOperator={columnsOperator}
-  defaultOperators={["AND", "OR"]}
-  handleApply={handleApply}
   sx={{
     textBox: {
       tokenColors: {
@@ -162,6 +250,7 @@ As the user types, `QueryTextBox` parses the input into typed tokens and paints 
         customColumn: "#00897b",
         operator: "#c2185b",
         logical: "#6a1b9a",
+        paren: "#e65100",
         value: "#212121",
       },
     },
@@ -171,8 +260,6 @@ As the user types, `QueryTextBox` parses the input into typed tokens and paints 
 
 ##### Token Font Weights
 
-You can also tweak the per-token font weight via `sx.textBox.tokenFontWeights` (or `sx.tokenFontWeights` on `QueryTextBox` directly). Accepts any valid CSS `font-weight` value (number or keyword).
-
 | **Token Type**     | **Default Weight** |
 | ------------------ | ------------------ |
 | `column`           | `400`              |
@@ -180,161 +267,79 @@ You can also tweak the per-token font weight via `sx.textBox.tokenFontWeights` (
 | `operator`         | `600`              |
 | `unknownOperator`  | `400`              |
 | `logical`          | `600`              |
+| `paren`            | `700`              |
 | `value`            | `400`              |
-
-```jsx
-<QueryBuilder
-  sx={{
-    textBox: {
-      tokenFontWeights: {
-        column: 700,
-        operator: 500,
-        logical: 800,
-      },
-    },
-  }}
-/>
-```
 
 #### Query Form Slots
 
-The advanced-filter form (`QueryForm`) inside the popover exposes its own slot map via `sx.queryForm`.
+The visual query builder form inside the popover exposes its own slot map via `sx.queryForm`.
 
-| **Slot**                 | **Targets**                                                                       |
-| ------------------------ | --------------------------------------------------------------------------------- |
-| `root`                   | The outer wrapper `Box` of the form.                                              |
-| `header`                 | The "Combine queries with: [AND/OR]" header `Box`.                                |
-| `headerLabel`            | The "Combine queries with:" label `Typography`.                                   |
-| `globalOperatorSelect`   | The global AND/OR `Select`.                                                       |
-| `rowsStack`              | The `Stack` that holds the query rows.                                            |
-| `row`                    | Each individual query row `Box` (column / operator / value / delete).             |
-| `columnSelect`           | The column `Select` in each row.                                                  |
-| `operatorSelect`         | The operator `Select` in each row.                                                |
-| `valueInput`             | The value `TextField` in each row.                                                |
-| `deleteButton`           | The delete (trash) `IconButton` for each row.                                     |
-| `deleteTooltip`          | The `Tooltip` wrapping the delete button.                                         |
-| `actions`                | The action-buttons row `Box` (holds "Add Query" + "Apply Filters").               |
-| `addButton`              | The "Add Query" `Button`.                                                         |
-| `applyButton`            | The "Apply Filters" `Button`.                                                     |
+| **Slot**                 | **Targets**                                                    |
+| ------------------------ | -------------------------------------------------------------- |
+| `root`                   | The outer wrapper `Box` of the form.                           |
+| `columnSelect`           | The column `Select` in each rule row.                          |
+| `operatorSelect`         | The operator `Select` in each rule row.                        |
+| `valueInput`             | The value `TextField` in each rule row.                        |
+| `deleteButton`           | The delete `IconButton` for each rule/group.                   |
+| `actions`                | The action-buttons row `Box` (Search + Cancel).                |
+| `applyButton`            | The "Search" `Button`.                                         |
+| `cancelButton`           | The "Cancel" `Button`.                                         |
 
 #### Help Modal Slots
-
-The query-syntax help modal (opened from the `?` icon inside `QueryTextBox`) exposes its own slot map via `sx.textBox.helpModal` (or `sx.helpModal` when using `QueryTextBox` directly).
 
 | **Slot**            | **Targets**                                                          |
 | ------------------- | -------------------------------------------------------------------- |
 | `dialog`            | The `Dialog` itself.                                                 |
-| `title`             | The `DialogTitle` ("How to Use the Query Search").                   |
-| `closeButton`       | The close (×) `IconButton` in the title.                             |
+| `title`             | The `DialogTitle`.                                                   |
+| `closeButton`       | The close (x) `IconButton` in the title.                             |
 | `content`           | The `DialogContent`.                                                 |
-| `sectionTitle`      | Each `<h6>` section heading inside the content.                      |
+| `sectionTitle`      | Each section heading inside the content.                             |
 | `body`              | Each paragraph `Typography` inside the content.                      |
-| `codeBlock`         | The grey-background code blocks (e.g. `column operator value`).      |
+| `codeBlock`         | The grey-background code blocks.                                     |
 | `exampleBlock`      | Each individual example code block.                                  |
 | `exampleLabel`      | The uppercase caption above each example.                            |
-| `list`              | Each `<ul>` inside the content (tips, syntax bullets, etc.).         |
+| `list`              | Each `<ul>` inside the content.                                      |
 | `listItem`          | Each `<li>` `Typography`.                                            |
-| `chip`              | Each inline `Chip` (e.g. `name`, `==`, `"John Doe"`).                |
+| `chip`              | Each inline `Chip`.                                                  |
 | `divider`           | Each section `Divider`.                                              |
-| `warningText`       | The red "Cannot mix AND and OR" warning paragraph.                   |
 | `colorLegendItem`   | Each list item in the syntax-highlighting color legend.              |
-| `colorSwatch`       | The colored circle (`Box`) next to each legend item.                 |
+| `colorSwatch`       | The colored circle next to each legend item.                         |
 | `actions`           | The `DialogActions` row.                                             |
 | `gotItButton`       | The "Got it" `Button`.                                               |
 
-### Basic Example
+### Styling Example
 
 ```jsx
 <QueryBuilder
   columnsOperator={columnsOperator}
   defaultOperators={["AND", "OR"]}
-  relatedOperators={["contains", "exclude"]}
+  relatedOperators={relatedOperators}
   handleApply={handleApply}
   sx={{
-    root: { width: "100%" },
-    textBoxContainer: { marginBottom: "8px" },
-    iconButton: { color: "primary.main" },
-    popover: { padding: "24px" },
-    popoverPaper: { borderRadius: 3, boxShadow: 6 },
-    popoverContent: { minWidth: "400px" },
-    title: { color: "secondary.main", fontWeight: 700 },
+    root: { height: "52px" },
+    textBoxContainer: { height: "52px" },
     textBox: {
-      input: { backgroundColor: "background.default" },
-      applyButton: { textTransform: "none" },
-      suggestionsBox: { width: "360px" },
-      suggestionItem: {
-        "&:hover": { backgroundColor: "action.hover" },
+      tokenColors: {
+        value: "#212121",
+      },
+      input: { height: "52px" },
+    },
+    popover: {
+      "& .MuiPopover-paper": {
+        width: { xs: "calc(100vw - 32px)", sm: 520 },
+        maxWidth: "calc(100vw - 32px)",
       },
     },
-    queryForm: {
-      header: { mb: 3 },
-      globalOperatorSelect: { minWidth: 160 },
-      columnSelect: { bgcolor: "background.default" },
-      applyButton: { textTransform: "none", bgcolor: "success.main" },
-    },
-  }}
-/>
-```
-
-### Theme-Aware Example
-
-Because each slot accepts a normal MUI `sx` value, you can use theme tokens, breakpoints, and callbacks just like in any other MUI component:
-
-```jsx
-<QueryBuilder
-  columnsOperator={columnsOperator}
-  defaultOperators={["AND", "OR"]}
-  handleApply={handleApply}
-  sx={{
-    root: {
-      p: 2,
-      borderRadius: 2,
-      bgcolor: "background.paper",
-      boxShadow: 1,
-    },
-    textBoxContainer: {
-      gap: 1,
-      mb: { xs: 1, md: 2 },
-    },
-    iconButton: (theme) => ({
-      color: theme.palette.primary.main,
-      "&:hover": { color: theme.palette.primary.dark },
-    }),
-    popover: { mt: 1 },
-    popoverPaper: {
-      // Override the default responsive width caps
-      width: { xs: "calc(100vw - 32px)", sm: 600, md: 800 },
-    },
-    popoverContent: { minWidth: 480 },
-    title: { mb: 1, color: "text.secondary" },
-    textBox: {
-      input: (theme) => ({
-        borderRadius: 1,
-        "& fieldset": { borderColor: theme.palette.divider },
-      }),
-      applyButton: { ml: 1 },
-      popper: { zIndex: 1500 },
-      suggestionsBox: {
-        borderRadius: 1,
-        boxShadow: 3,
+    popoverContent: {
+      "& .MuiInputBase-input, & .MuiSelect-select": {
+        py: "4px",
+        minHeight: "unset",
+        fontSize: "12px",
       },
-      errorTooltip: { bgcolor: "warning.main", color: "warning.contrastText" },
-      hintTooltip: { bgcolor: "primary.dark" },
-      helpModal: {
-        dialog: { "& .MuiDialog-paper": { borderRadius: 3 } },
-        sectionTitle: { color: "primary.main" },
-        codeBlock: { bgcolor: "grey.900", color: "common.white" },
-        gotItButton: { textTransform: "none" },
+      "& .MuiButton-root": {
+        textTransform: "none",
+        fontSize: "12px",
       },
-    },
-    queryForm: {
-      root: { p: 3 },
-      row: (theme) => ({
-        bgcolor: theme.palette.action.hover,
-        borderRadius: 1,
-        p: 1,
-      }),
-      deleteButton: { "&:hover": { bgcolor: "error.light" } },
     },
   }}
 />
@@ -344,16 +349,18 @@ Because each slot accepts a normal MUI `sx` value, you can use theme tokens, bre
 
 ## How It Works
 
-Query Text Box: Shows the current query as it's built.
-Popover (Tune Icon): Opens an interface for detailed filter setup.
-Apply: The handleApply function is triggered with the final query when users apply their filters.
+1. **Query Text Box**: Type queries directly with real-time syntax highlighting and autocomplete. Supports parentheses for grouping and mixed AND/OR.
+2. **Popover (Tune Icon)**: Opens a visual form for building nested rule groups with independent AND/OR combinators and NOT toggles.
+3. **Bidirectional Sync**: Applying from the text box updates the form, and applying from the form updates the text box.
+4. **Apply**: The `handleApply` callback receives the full group tree structure.
 
 ---
 
 ## Notes
 
-**Required Props**: `columnsOperator` and `handleApply` are essential for the component to work effectively.
-**Custom Operators**: Add or modify operators in `columnsOperator` or `relatedOperators` to suit your needs.
+- **Required Props**: `columnsOperator` and `handleApply` are essential for the component to work effectively.
+- **Custom Operators**: Add or modify operators in `columnsOperator` or `relatedOperators` to suit your needs.
+- **Theme Support**: Token colors use MUI theme palette tokens by default, so they work correctly in both light and dark mode without additional configuration.
 
 ---
 

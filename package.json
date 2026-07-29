@@ -1,6 +1,6 @@
 {
   "name": "query-builder-react",
-  "version": "1.0.2",
+  "version": "2.0.0",
   "description": "Advanced React query builder that lets users write a query in a free-text input or build it visually from a popover, with column/operator/value rows and AND/OR logic.",
   "main": "dist/query-builder.umd.js",
   "module": "dist/query-builder.es.js",
@@ -51,15 +51,15 @@
   },
   "devDependencies": {
     "@vitejs/plugin-react": "^4.3.4",
+    "prettier": "^3.9.6",
     "vite": "^6.0.1"
   },
   "peerDependencies": {
-    "react": "^18.3.1",
-    "react-dom": "^18.3.1",
     "@emotion/react": "^11.13.5",
     "@emotion/styled": "^11.13.5",
     "@mui/icons-material": "^6.1.9",
-    "@mui/material": "^6.1.9"
-  },
-  "dependencies": {}
+    "@mui/material": "^6.1.9",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  }
 }
