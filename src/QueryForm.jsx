@@ -14,6 +14,7 @@ import {
   Radio,
 } from "@mui/material";
 import { Add, Close } from "@mui/icons-material";
+import { isNullOperator } from "./helpers";
 
 const fieldSx = {
   flex: { xs: "1 1 100%", sm: 1 },
@@ -91,14 +92,16 @@ const RuleRow = ({
           ))}
       </Select>
 
-      <TextField
-        size="small"
-        value={rule.value}
-        onChange={(e) => onChange(index, "value", e.target.value)}
-        placeholder="Enter value"
-        fullWidth
-        sx={{ ...fieldSx, ...valueInputSx }}
-      />
+      {!isNullOperator(rule.operator) && (
+        <TextField
+          size="small"
+          value={rule.value}
+          onChange={(e) => onChange(index, "value", e.target.value)}
+          placeholder="Enter value"
+          fullWidth
+          sx={{ ...fieldSx, ...valueInputSx }}
+        />
+      )}
 
       <Tooltip title="Delete Rule">
         <IconButton
@@ -146,9 +149,14 @@ const RuleGroup = ({
   };
 
   const handleRuleChange = (index, field, value) => {
-    const newRules = group.rules.map((r, i) =>
-      i === index ? { ...r, [field]: value } : r,
-    );
+    const newRules = group.rules.map((r, i) => {
+      if (i !== index) return r;
+      const updated = { ...r, [field]: value };
+      if (field === "operator" && isNullOperator(value)) {
+        updated.value = "";
+      }
+      return updated;
+    });
     onChange(path, { ...group, rules: newRules });
   };
 

@@ -1,3 +1,9 @@
+// Operators that take no value (null-check operators)
+const NULL_OPERATORS = ["IS NULL", "IS NOT NULL", "is_null", "is_not_null"];
+
+// Multi-word operators that must be treated as a single token
+const MULTI_WORD_OPERATORS = ["IS NULL", "IS NOT NULL", "NOT IN"];
+
 function parseQuery(text, operators, columns) {
   const sortedOperators = [...operators].sort((a, b) => b.length - a.length);
   const group = parseGroupFromText(text, sortedOperators, columns);
@@ -31,6 +37,17 @@ function tokenizeForParsing(text) {
       while (j < text.length && text[j] !== '"') j++;
       tokens.push({ type: "word", value: text.slice(i, j + 1) });
       i = j + 1;
+    } else if (text[i] === "[") {
+      // Consume the entire [...] list as a single value token
+      let j = i + 1;
+      let depth = 1;
+      while (j < text.length && depth > 0) {
+        if (text[j] === "[") depth++;
+        else if (text[j] === "]") depth--;
+        if (depth > 0) j++;
+      }
+      tokens.push({ type: "word", value: text.slice(i, j + 1) });
+      i = j + 1;
     } else {
       let j = i;
       while (
@@ -38,7 +55,8 @@ function tokenizeForParsing(text) {
         text[j] !== " " &&
         text[j] !== "\t" &&
         text[j] !== "(" &&
-        text[j] !== ")"
+        text[j] !== ")" &&
+        text[j] !== "["
       )
         j++;
       tokens.push({ type: "word", value: text.slice(i, j) });
@@ -50,6 +68,27 @@ function tokenizeForParsing(text) {
 
 function buildTree(tokens, sortedOperators, columns) {
   let pos = 0;
+
+  function peekMultiWordOp() {
+    // Try to match multi-word operators at current position
+    for (const mwOp of MULTI_WORD_OPERATORS) {
+      const words = mwOp.split(" ");
+      let match = true;
+      for (let k = 0; k < words.length; k++) {
+        const idx = pos + k;
+        if (
+          idx >= tokens.length ||
+          tokens[idx].type !== "word" ||
+          tokens[idx].value.toUpperCase() !== words[k]
+        ) {
+          match = false;
+          break;
+        }
+      }
+      if (match) return { op: mwOp, wordCount: words.length };
+    }
+    return null;
+  }
 
   function parseExpression() {
     const clauses = [];
@@ -130,14 +169,24 @@ function buildTree(tokens, sortedOperators, columns) {
 
     const tok = tokens[pos];
 
-    // NOT prefix
+    // NOT prefix — but NOT followed by IN is an operator, not a negation
     if (tok.type === "word" && tok.value.toUpperCase() === "NOT") {
-      pos++;
-      const inner = parsePrimary();
-      if (inner.type === "group") {
-        return { ...inner, not: true };
+      // Check if this is "NOT IN" (part of a multi-word op) or "NOT (" (negation)
+      const nextTok = tokens[pos + 1];
+      if (
+        nextTok &&
+        nextTok.type === "word" &&
+        nextTok.value.toUpperCase() === "IN"
+      ) {
+        // This is NOT IN — don't treat as negation, fall through to rule parsing
+      } else {
+        pos++;
+        const inner = parsePrimary();
+        if (inner.type === "group") {
+          return { ...inner, not: true };
+        }
+        return { type: "group", combinator: "AND", not: true, rules: [inner] };
       }
-      return { type: "group", combinator: "AND", not: true, rules: [inner] };
     }
 
     // Parenthesized sub-expression
@@ -164,15 +213,28 @@ function buildTree(tokens, sortedOperators, columns) {
       return { type: "rule", column, operator: "", value: "" };
     }
 
-    const opTok = tokens[pos];
-    const operator = opTok ? opTok.value : "";
-    pos++;
+    // Try to match a multi-word operator (IS NULL, IS NOT NULL, NOT IN)
+    const mwMatch = peekMultiWordOp();
+    let operator;
+    if (mwMatch) {
+      operator = mwMatch.op;
+      pos += mwMatch.wordCount;
+    } else {
+      const opTok = tokens[pos];
+      operator = opTok ? opTok.value : "";
+      pos++;
+    }
+
+    // Null-check operators don't take a value
+    if (isNullOperator(operator)) {
+      return { type: "rule", column, operator, value: "" };
+    }
 
     if (pos >= tokens.length) {
       return { type: "rule", column, operator, value: "" };
     }
 
-    // Value: could be a quoted string or a word (but not AND/OR/paren)
+    // Value: could be a quoted string, list, or a word (but not AND/OR/paren)
     let value = "";
     const valTok = tokens[pos];
     if (
@@ -184,7 +246,29 @@ function buildTree(tokens, sortedOperators, columns) {
       value = valTok.value;
       pos++;
     } else if (valTok && valTok.type === "paren") {
-      // no value before a paren, leave it
+      // Might be a list value for IN operator: (1,2,3)
+      if (
+        (operator.toUpperCase() === "IN" ||
+          operator.toUpperCase() === "NOT IN" ||
+          operator === "in" ||
+          operator === "not_in") &&
+        valTok.value === "("
+      ) {
+        // Consume paren-delimited list as value
+        let listStr = "(";
+        pos++; // skip opening paren
+        while (pos < tokens.length) {
+          if (tokens[pos].type === "paren" && tokens[pos].value === ")") {
+            listStr += ")";
+            pos++;
+            break;
+          }
+          listStr += tokens[pos].value;
+          pos++;
+        }
+        value = listStr;
+      }
+      // otherwise no value before a paren, leave it
     }
 
     return { type: "rule", column, operator, value };
@@ -195,6 +279,12 @@ function buildTree(tokens, sortedOperators, columns) {
     return { type: "group", combinator: "AND", not: false, rules: [result] };
   }
   return result;
+}
+
+function isNullOperator(op) {
+  return (
+    NULL_OPERATORS.includes(op) || NULL_OPERATORS.includes(op.toUpperCase())
+  );
 }
 
 function parseFlatQueries(text, operators, columns) {
@@ -242,7 +332,12 @@ function parseFlatQueries(text, operators, columns) {
 
 function convertQueriesToText(filters, defaultOperator) {
   return filters
-    .map((filter) => `${filter.column} ${filter.operator} ${filter.value}`)
+    .map((filter) => {
+      if (isNullOperator(filter.operator)) {
+        return `${filter.column} ${filter.operator}`;
+      }
+      return `${filter.column} ${filter.operator} ${filter.value}`;
+    })
     .join(` ${defaultOperator} `);
 }
 
@@ -275,6 +370,25 @@ function validateQuery(query, _queryRegex) {
     };
   }
 
+  // Check balanced brackets
+  let bracketDepth = 0;
+  for (const ch of query) {
+    if (ch === "[") bracketDepth++;
+    if (ch === "]") bracketDepth--;
+    if (bracketDepth < 0) {
+      return {
+        isValid: false,
+        error: "Unmatched closing bracket `]`.",
+      };
+    }
+  }
+  if (bracketDepth > 0) {
+    return {
+      isValid: false,
+      error: "Unclosed bracket `[`. Add the matching `]`.",
+    };
+  }
+
   // Check unclosed quotes
   const unclosedQuote = (query.match(/"/g) || []).length % 2 !== 0;
   if (unclosedQuote) {
@@ -302,30 +416,32 @@ function validateQuery(query, _queryRegex) {
     };
   }
 
-  // Check empty parens
-  if (/\(\s*\)/.test(query)) {
+  // Check empty parens (but not list parens like "in (1,2)")
+  if (
+    /\(\s*\)/.test(
+      query.replace(/\b(?:in|IN|NOT\s+IN|not_in)\s*\([^)]*\)/g, ""),
+    )
+  ) {
     return {
       isValid: false,
       error: "Empty parentheses `()` found. Add conditions inside the group.",
     };
   }
 
-  // Basic structure check: after removing parens, each clause should have at least column + operator + value
-  const withoutParens = query.replace(/[()]/g, " ");
+  // Basic structure check: after removing parens, each clause should have at least column + operator
+  const withoutParens = query.replace(/[()[\]]/g, " ");
   const parts = withoutParens.split(/\s+(?:AND|OR)\s+/i);
   for (const part of parts) {
     const trimmed = part.trim();
     if (!trimmed) continue;
     const words = trimmed.split(/\s+/);
-    if (words.length < 3 && !/^".*"$/.test(words[words.length - 1])) {
-      // Allow partial typing — only flag truly broken clauses
-      if (words.length < 2) {
-        return {
-          isValid: false,
-          error:
-            'Incomplete condition. Expected: <column> <operator> <value> (e.g. name == "John").',
-        };
-      }
+    // Allow 2-word clauses for null operators (e.g., "field is_null" or "field IS NULL" which is 3 words)
+    if (words.length < 2) {
+      return {
+        isValid: false,
+        error:
+          'Incomplete condition. Expected: <column> <operator> <value> (e.g. name == "John").',
+      };
     }
   }
 
@@ -334,37 +450,98 @@ function validateQuery(query, _queryRegex) {
 
 /**
  * Tokenize a query string into typed pieces for syntax highlighting.
- * Now supports parentheses as a "paren" token type.
+ * Supports parentheses, brackets, and multi-word operators.
  */
 function tokenizeQuery(text, columns, operators, defaultOperators) {
   if (!text) return [];
 
-  const partRegex = /"[^"]*"?|[()]|\s+|\S+/g;
+  const partRegex = /"[^"]*"?|\[[^\]]*\]?|[()]|\s+|\S+/g;
   const parts = text.match(partRegex) || [];
 
   const cols = columns || [];
   const ops = operators || [];
   const upperDefaults = (defaultOperators || []).map((d) => d.toUpperCase());
 
+  // Build set of multi-word operators from the ops list
+  const multiWordOps = ops.filter((op) => op.includes(" "));
+
   const tokens = [];
   let slot = "column"; // column → operator → value → logical → column …
+  let i = 0;
 
-  for (const part of parts) {
+  while (i < parts.length) {
+    const part = parts[i];
+
     if (/^\s+$/.test(part)) {
       tokens.push({ type: "whitespace", text: part });
+      i++;
       continue;
     }
 
     if (part === "(" || part === ")") {
       tokens.push({ type: "paren", text: part });
       if (part === "(") slot = "column";
+      i++;
       continue;
     }
 
-    // NOT keyword
+    // NOT keyword (check if it's NOT as negation or part of "NOT IN")
     if (part.toUpperCase() === "NOT" && slot === "column") {
+      // Look ahead to see if next non-whitespace is "IN" (then it's NOT a negation in this context)
+      // But at column position, NOT is always a negation prefix
       tokens.push({ type: "logical", text: part });
+      i++;
       continue;
+    }
+
+    // In operator slot, try to match multi-word operators
+    if (slot === "operator") {
+      let matchedMultiOp = null;
+      for (const mwOp of multiWordOps) {
+        const mwWords = mwOp.split(" ");
+        let j = i;
+        let match = true;
+        const collected = [];
+        for (const word of mwWords) {
+          // skip whitespace
+          while (j < parts.length && /^\s+$/.test(parts[j])) {
+            collected.push(parts[j]);
+            j++;
+          }
+          if (
+            j >= parts.length ||
+            parts[j].toUpperCase() !== word.toUpperCase()
+          ) {
+            match = false;
+            break;
+          }
+          collected.push(parts[j]);
+          j++;
+        }
+        if (match) {
+          matchedMultiOp = { text: collected.join(""), endIdx: j, op: mwOp };
+          break;
+        }
+      }
+
+      if (matchedMultiOp) {
+        // Emit each part with correct type
+        for (let k = i; k < matchedMultiOp.endIdx; k++) {
+          if (/^\s+$/.test(parts[k])) {
+            tokens.push({ type: "whitespace", text: parts[k] });
+          } else {
+            tokens.push({ type: "operator", text: parts[k] });
+          }
+        }
+        i = matchedMultiOp.endIdx;
+        // Null operators skip value slot
+        if (isNullOperator(matchedMultiOp.op)) {
+          slot = "logical";
+        } else {
+          slot = "value";
+        }
+        continue;
+      }
     }
 
     let type;
@@ -378,7 +555,12 @@ function tokenizeQuery(text, columns, operators, defaultOperators) {
       }
     } else if (slot === "operator") {
       type = ops.includes(part) ? "operator" : "unknownOperator";
-      slot = "value";
+      // Null operators (single-word form) skip value slot
+      if (isNullOperator(part)) {
+        slot = "logical";
+      } else {
+        slot = "value";
+      }
     } else if (slot === "value") {
       type = "value";
       slot = "logical";
@@ -392,6 +574,7 @@ function tokenizeQuery(text, columns, operators, defaultOperators) {
       }
     }
     tokens.push({ type, text: part });
+    i++;
   }
 
   return tokens;
@@ -419,7 +602,11 @@ function convertGroupToText(group) {
   const parts = [];
   for (const item of group.rules || []) {
     if (item.type === "rule" && item.column && item.operator) {
-      parts.push(`${item.column} ${item.operator} ${item.value}`);
+      if (isNullOperator(item.operator)) {
+        parts.push(`${item.column} ${item.operator}`);
+      } else {
+        parts.push(`${item.column} ${item.operator} ${item.value}`);
+      }
     } else if (item.type === "group") {
       const sub = convertGroupToText(item);
       if (sub) parts.push(`(${sub})`);
@@ -438,4 +625,7 @@ export {
   tokenizeQuery,
   flattenGroupToQueries,
   convertGroupToText,
+  isNullOperator,
+  NULL_OPERATORS,
+  MULTI_WORD_OPERATORS,
 };
