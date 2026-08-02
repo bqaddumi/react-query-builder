@@ -2,7 +2,13 @@
 const NULL_OPERATORS = ["IS NULL", "IS NOT NULL", "is_null", "is_not_null"];
 
 // Multi-word operators that must be treated as a single token
-const MULTI_WORD_OPERATORS = ["IS NULL", "IS NOT NULL", "NOT IN"];
+const MULTI_WORD_OPERATORS = [
+  "IS NOT NULL",
+  "IS NULL",
+  "NOT IN",
+  "starts with",
+  "ends with",
+];
 
 function parseQuery(text, operators, columns) {
   const sortedOperators = [...operators].sort((a, b) => b.length - a.length);
@@ -79,7 +85,7 @@ function buildTree(tokens, sortedOperators, columns) {
         if (
           idx >= tokens.length ||
           tokens[idx].type !== "word" ||
-          tokens[idx].value.toUpperCase() !== words[k]
+          tokens[idx].value.toUpperCase() !== words[k].toUpperCase()
         ) {
           match = false;
           break;
@@ -455,7 +461,7 @@ function validateQuery(query, _queryRegex) {
 function tokenizeQuery(text, columns, operators, defaultOperators) {
   if (!text) return [];
 
-  const partRegex = /"[^"]*"?|\[[^\]]*\]?|[()]|\s+|\S+/g;
+  const partRegex = /"[^"]*"?|\[[^\]]*\]?|[()]|\s+|[^\s()]+/g;
   const parts = text.match(partRegex) || [];
 
   const cols = columns || [];
@@ -480,7 +486,17 @@ function tokenizeQuery(text, columns, operators, defaultOperators) {
 
     if (part === "(" || part === ")") {
       tokens.push({ type: "paren", text: part });
-      if (part === "(") slot = "column";
+      if (part === "(") {
+        if (slot === "value") {
+          slot = "listValue";
+        } else {
+          slot = "column";
+        }
+      } else if (part === ")") {
+        if (slot === "listValue") {
+          slot = "logical";
+        }
+      }
       i++;
       continue;
     }
@@ -564,6 +580,8 @@ function tokenizeQuery(text, columns, operators, defaultOperators) {
     } else if (slot === "value") {
       type = "value";
       slot = "logical";
+    } else if (slot === "listValue") {
+      type = "value";
     } else {
       // slot === "logical"
       if (upperDefaults.includes(part.toUpperCase())) {
