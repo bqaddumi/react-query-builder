@@ -16,6 +16,7 @@ export default function QueryBuilder({
   relatedOperators = [],
   handleApply,
   placeholder = "",
+  helpContent,
   sx = {},
 }) {
   const {
@@ -119,6 +120,7 @@ export default function QueryBuilder({
           queryText={queryText}
           relatedOperators={relatedOperators}
           placeholder={placeholder}
+          helpContent={helpContent}
           sx={textBoxSx}
           endAdornment={
             <IconButton

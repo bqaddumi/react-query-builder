@@ -53,7 +53,7 @@ const HINT_TEXT =
 // ---------------------------------------------------------------------------
 // HelpModal – standalone component so the JSX stays readable
 // ---------------------------------------------------------------------------
-const HelpModal = ({ open, onClose, sx = {} }) => {
+const HelpModal = ({ open, onClose, helpContent, sx = {} }) => {
   // Slot map: each key targets a specific element inside the help dialog so
   // callers can override styles per-slot, e.g.
   // sx={{ dialog: {...}, codeBlock: {...}, gotItButton: {...} }}.
@@ -100,384 +100,388 @@ const HelpModal = ({ open, onClose, sx = {} }) => {
       </DialogTitle>
 
       <DialogContent dividers sx={contentSx}>
-        {/* ── Overview ─────────────────────────────────────────────────── */}
-        <Typography variant="h6" gutterBottom sx={sectionTitleSx}>
-          Overview
-        </Typography>
-        <Typography variant="body2" paragraph sx={bodySx}>
-          The query search box lets you filter data using a simple, readable
-          query language. Type your conditions directly into the search field
-          and press <strong>Apply</strong> to run the query. Suggestions will
-          appear as you type to guide you through valid columns, operators, and
-          logical connectors.
-        </Typography>
+        {helpContent || (
+          <>
+            <Typography variant="h6" gutterBottom sx={sectionTitleSx}>
+              Overview
+            </Typography>
+            <Typography variant="body2" paragraph sx={bodySx}>
+              The query search box lets you filter data using a simple, readable
+              query language. Type your conditions directly into the search
+              field and press <strong>Apply</strong> to run the query.
+              Suggestions will appear as you type to guide you through valid
+              columns, operators, and logical connectors.
+            </Typography>
 
-        <Divider sx={{ my: 2, ...dividerSx }} />
+            <Divider sx={{ my: 2, ...dividerSx }} />
 
-        {/* ── Basic Syntax ─────────────────────────────────────────────── */}
-        <Typography variant="h6" gutterBottom sx={sectionTitleSx}>
-          Basic Syntax
-        </Typography>
-        <Typography variant="body2" paragraph sx={bodySx}>
-          Every condition follows this pattern:
-        </Typography>
-        <Box
-          component="pre"
-          sx={{
-            bgcolor: "grey.100",
-            borderLeft: 4,
-            borderColor: "primary.main",
-            px: 2,
-            py: 1.5,
-            borderRadius: 1,
-            overflowX: "auto",
-            mb: 2,
-            fontFamily: "monospace",
-            fontSize: "0.875rem",
-            ...codeBlockSx,
-          }}
-        >
-          {`column  operator  value`}
-        </Box>
-        <Typography variant="body2" paragraph sx={bodySx}>
-          Each part is separated by a single space:
-        </Typography>
-        <Box component="ul" sx={{ mt: 0, mb: 2, pl: 3, ...listSx }}>
-          <Typography
-            component="li"
-            variant="body2"
-            gutterBottom
-            sx={listItemSx}
-          >
-            <strong>column</strong> — the field you want to filter on (e.g.{" "}
-            <Chip
-              label="name"
-              size="small"
-              sx={{ fontFamily: "monospace", ...chipSx }}
-            />
-            ,{" "}
-            <Chip
-              label="duration"
-              size="small"
-              sx={{ fontFamily: "monospace", ...chipSx }}
-            />
-            ).
-          </Typography>
-          <Typography
-            component="li"
-            variant="body2"
-            gutterBottom
-            sx={listItemSx}
-          >
-            <strong>operator</strong> — the comparison to apply (e.g.{" "}
-            <Chip
-              label="=="
-              size="small"
-              sx={{ fontFamily: "monospace", ...chipSx }}
-            />
-            ,{" "}
-            <Chip
-              label="contains"
-              size="small"
-              sx={{ fontFamily: "monospace", ...chipSx }}
-            />
-            ,{" "}
-            <Chip
-              label=">"
-              size="small"
-              sx={{ fontFamily: "monospace", ...chipSx }}
-            />
-            ).
-          </Typography>
-          <Typography
-            component="li"
-            variant="body2"
-            gutterBottom
-            sx={listItemSx}
-          >
-            <strong>value</strong> — what you are comparing against. Wrap values
-            that contain spaces in double quotes:{" "}
-            <Chip
-              label={`"John Doe"`}
-              size="small"
-              sx={{ fontFamily: "monospace", ...chipSx }}
-            />
-            .
-          </Typography>
-        </Box>
-
-        <Divider sx={{ my: 2, ...dividerSx }} />
-
-        {/* ── Combining Conditions ─────────────────────────────────────── */}
-        <Typography variant="h6" gutterBottom sx={sectionTitleSx}>
-          Combining Conditions
-        </Typography>
-        <Typography variant="body2" paragraph sx={bodySx}>
-          Use <strong>AND</strong> or <strong>OR</strong> (uppercase) to join
-          multiple conditions:
-        </Typography>
-        <Box
-          component="pre"
-          sx={{
-            bgcolor: "grey.100",
-            borderLeft: 4,
-            borderColor: "primary.main",
-            px: 2,
-            py: 1.5,
-            borderRadius: 1,
-            overflowX: "auto",
-            mb: 2,
-            fontFamily: "monospace",
-            fontSize: "0.875rem",
-            ...codeBlockSx,
-          }}
-        >
-          {`condition1 AND condition2 AND condition3
-condition1 OR  condition2`}
-        </Box>
-
-        <Typography variant="h6" gutterBottom sx={sectionTitleSx}>
-          Grouping with Parentheses
-        </Typography>
-        <Typography variant="body2" paragraph sx={bodySx}>
-          You can mix <strong>AND</strong> and <strong>OR</strong> in the same
-          query by using parentheses <strong>( )</strong> to group conditions:
-        </Typography>
-        <Box
-          component="pre"
-          sx={{
-            bgcolor: "grey.100",
-            borderLeft: 4,
-            borderColor: "primary.main",
-            px: 2,
-            py: 1.5,
-            borderRadius: 1,
-            overflowX: "auto",
-            mb: 2,
-            fontFamily: "monospace",
-            fontSize: "0.875rem",
-            ...codeBlockSx,
-          }}
-        >
-          {`name == "John" AND (status == active OR status == pending)
-(price > 100 AND price < 500) OR category == sale`}
-        </Box>
-        <Typography variant="body2" paragraph sx={bodySx}>
-          Without parentheses, <strong>AND</strong> binds tighter than{" "}
-          <strong>OR</strong>:
-        </Typography>
-        <Box
-          component="pre"
-          sx={{
-            bgcolor: "grey.100",
-            borderLeft: 4,
-            borderColor: "primary.main",
-            px: 2,
-            py: 1.5,
-            borderRadius: 1,
-            overflowX: "auto",
-            mb: 2,
-            fontFamily: "monospace",
-            fontSize: "0.875rem",
-            ...codeBlockSx,
-          }}
-        >
-          {`a = 1 OR b = 2 AND c = 3
-// is the same as: a = 1 OR (b = 2 AND c = 3)`}
-        </Box>
-
-        <Typography variant="h6" gutterBottom sx={sectionTitleSx}>
-          NOT (Negation)
-        </Typography>
-        <Typography variant="body2" paragraph sx={bodySx}>
-          Prefix a group with <strong>NOT</strong> to negate it:
-        </Typography>
-        <Box
-          component="pre"
-          sx={{
-            bgcolor: "grey.100",
-            borderLeft: 4,
-            borderColor: "primary.main",
-            px: 2,
-            py: 1.5,
-            borderRadius: 1,
-            overflowX: "auto",
-            mb: 2,
-            fontFamily: "monospace",
-            fontSize: "0.875rem",
-            ...codeBlockSx,
-          }}
-        >
-          {`NOT (status == inactive OR status == deleted)`}
-        </Box>
-
-        <Divider sx={{ my: 2, ...dividerSx }} />
-
-        {/* ── Examples ─────────────────────────────────────────────────── */}
-        <Typography variant="h6" gutterBottom sx={sectionTitleSx}>
-          Examples
-        </Typography>
-
-        {[
-          {
-            label: "Exact match",
-            code: `name == "Alice"`,
-          },
-          {
-            label: "Contains substring",
-            code: `name contains "ali"`,
-          },
-          {
-            label: "Numeric comparison",
-            code: `duration > 30`,
-          },
-          {
-            label: "Multiple conditions (AND)",
-            code: `name == "Alice" AND duration > 30`,
-          },
-          {
-            label: "Multiple conditions (OR)",
-            code: `status == active OR status == pending`,
-          },
-          {
-            label: "Mixed AND/OR with grouping",
-            code: `name == "Alice" AND (status == active OR status == pending)`,
-          },
-          {
-            label: "Nested groups",
-            code: `(price > 100 AND price < 500) OR (category == sale AND stock > 0)`,
-          },
-          {
-            label: "NOT negation",
-            code: `NOT (status == deleted OR status == archived)`,
-          },
-        ].map(({ label, code }) => (
-          <Box key={label} mb={1.5}>
-            <Typography
-              variant="caption"
-              sx={{
-                color: "text.secondary",
-                textTransform: "uppercase",
-                letterSpacing: 0.5,
-                ...exampleLabelSx,
-              }}
-            >
-              {label}
+            {/* ── Basic Syntax ─────────────────────────────────────────────── */}
+            <Typography variant="h6" gutterBottom sx={sectionTitleSx}>
+              Basic Syntax
+            </Typography>
+            <Typography variant="body2" paragraph sx={bodySx}>
+              Every condition follows this pattern:
             </Typography>
             <Box
               component="pre"
               sx={{
-                bgcolor: "grey.50",
-                border: 1,
-                borderColor: "divider",
+                bgcolor: "grey.100",
+                borderLeft: 4,
+                borderColor: "primary.main",
                 px: 2,
-                py: 1,
+                py: 1.5,
                 borderRadius: 1,
                 overflowX: "auto",
-                mt: 0.5,
+                mb: 2,
                 fontFamily: "monospace",
                 fontSize: "0.875rem",
-                ...exampleBlockSx,
+                ...codeBlockSx,
               }}
             >
-              {code}
+              {`column  operator  value`}
             </Box>
-          </Box>
-        ))}
-
-        <Divider sx={{ my: 2, ...dividerSx }} />
-
-        {/* ── Tips ─────────────────────────────────────────────────────── */}
-        <Typography variant="h6" gutterBottom sx={sectionTitleSx}>
-          Tips
-        </Typography>
-        <Box component="ul" sx={{ mt: 0, mb: 1, pl: 3, ...listSx }}>
-          {[
-            "Start typing a column name and select it from the suggestion list.",
-            "After picking a column, the suggestion list will show valid operators for that column.",
-            "After entering a value, AND / OR will appear in the suggestion list.",
-            "Use parentheses ( ) to group conditions when mixing AND and OR.",
-            "Prefix a group with NOT to negate it — e.g. NOT (status == deleted).",
-            'Wrap multi-word values in double quotes — e.g. "John Doe".',
-            "AND has higher precedence than OR. Use parentheses to override.",
-            "Syntax errors are highlighted in the text box. Hover the input to see the specific error.",
-            "You can also build queries visually using the filter panel (click the tune icon).",
-          ].map((tip) => (
-            <Typography
-              key={tip}
-              component="li"
-              variant="body2"
-              gutterBottom
-              sx={listItemSx}
-            >
-              {tip}
+            <Typography variant="body2" paragraph sx={bodySx}>
+              Each part is separated by a single space:
             </Typography>
-          ))}
-        </Box>
+            <Box component="ul" sx={{ mt: 0, mb: 2, pl: 3, ...listSx }}>
+              <Typography
+                component="li"
+                variant="body2"
+                gutterBottom
+                sx={listItemSx}
+              >
+                <strong>column</strong> — the field you want to filter on (e.g.{" "}
+                <Chip
+                  label="name"
+                  size="small"
+                  sx={{ fontFamily: "monospace", ...chipSx }}
+                />
+                ,{" "}
+                <Chip
+                  label="duration"
+                  size="small"
+                  sx={{ fontFamily: "monospace", ...chipSx }}
+                />
+                ).
+              </Typography>
+              <Typography
+                component="li"
+                variant="body2"
+                gutterBottom
+                sx={listItemSx}
+              >
+                <strong>operator</strong> — the comparison to apply (e.g.{" "}
+                <Chip
+                  label="=="
+                  size="small"
+                  sx={{ fontFamily: "monospace", ...chipSx }}
+                />
+                ,{" "}
+                <Chip
+                  label="contains"
+                  size="small"
+                  sx={{ fontFamily: "monospace", ...chipSx }}
+                />
+                ,{" "}
+                <Chip
+                  label=">"
+                  size="small"
+                  sx={{ fontFamily: "monospace", ...chipSx }}
+                />
+                ).
+              </Typography>
+              <Typography
+                component="li"
+                variant="body2"
+                gutterBottom
+                sx={listItemSx}
+              >
+                <strong>value</strong> — what you are comparing against. Wrap
+                values that contain spaces in double quotes:{" "}
+                <Chip
+                  label={`"John Doe"`}
+                  size="small"
+                  sx={{ fontFamily: "monospace", ...chipSx }}
+                />
+                .
+              </Typography>
+            </Box>
 
-        <Divider sx={{ my: 2, ...dividerSx }} />
+            <Divider sx={{ my: 2, ...dividerSx }} />
 
-        {/* ── Token Colors ─────────────────────────────────────────────── */}
-        <Typography variant="h6" gutterBottom sx={sectionTitleSx}>
-          Syntax Highlighting
-        </Typography>
-        <Typography variant="body2" paragraph sx={bodySx}>
-          As you type, each part of the query is colorized to help you spot
-          mistakes at a glance:
-        </Typography>
-        <Box component="ul" sx={{ mt: 0, mb: 1, pl: 3, ...listSx }}>
-          {[
-            { color: "primary.main", label: "Blue", desc: "Known column" },
-            {
-              color: "info.main",
-              label: "Light blue",
-              desc: "Custom / unknown column",
-            },
-            { color: "error.main", label: "Red", desc: "Valid operator" },
-            {
-              color: "text.disabled",
-              label: "Grey",
-              desc: "Unrecognized operator (still typing)",
-            },
-            {
-              color: "secondary.main",
-              label: "Purple",
-              desc: "Logical connector — AND / OR / NOT",
-            },
-            {
-              color: "warning.main",
-              label: "Orange",
-              desc: "Parentheses ( )",
-            },
-            { color: "text.primary", label: "Default", desc: "Value" },
-          ].map(({ color, label, desc }) => (
-            <Typography
-              key={label}
-              component="li"
-              variant="body2"
-              gutterBottom
-              sx={colorLegendItemSx}
-            >
-              <Box
-                component="span"
-                sx={{
-                  display: "inline-block",
-                  width: 12,
-                  height: 12,
-                  borderRadius: "50%",
-                  bgcolor: color,
-                  mr: 1,
-                  verticalAlign: "middle",
-                  ...colorSwatchSx,
-                }}
-              />
-              <Box component="strong" sx={{ color }}>
-                {label}
-              </Box>{" "}
-              — {desc}
+            {/* ── Combining Conditions ─────────────────────────────────────── */}
+            <Typography variant="h6" gutterBottom sx={sectionTitleSx}>
+              Combining Conditions
             </Typography>
-          ))}
-        </Box>
+            <Typography variant="body2" paragraph sx={bodySx}>
+              Use <strong>AND</strong> or <strong>OR</strong> (uppercase) to
+              join multiple conditions:
+            </Typography>
+            <Box
+              component="pre"
+              sx={{
+                bgcolor: "grey.100",
+                borderLeft: 4,
+                borderColor: "primary.main",
+                px: 2,
+                py: 1.5,
+                borderRadius: 1,
+                overflowX: "auto",
+                mb: 2,
+                fontFamily: "monospace",
+                fontSize: "0.875rem",
+                ...codeBlockSx,
+              }}
+            >
+              {`condition1 AND condition2 AND condition3
+condition1 OR  condition2`}
+            </Box>
+
+            <Typography variant="h6" gutterBottom sx={sectionTitleSx}>
+              Grouping with Parentheses
+            </Typography>
+            <Typography variant="body2" paragraph sx={bodySx}>
+              You can mix <strong>AND</strong> and <strong>OR</strong> in the
+              same query by using parentheses <strong>( )</strong> to group
+              conditions:
+            </Typography>
+            <Box
+              component="pre"
+              sx={{
+                bgcolor: "grey.100",
+                borderLeft: 4,
+                borderColor: "primary.main",
+                px: 2,
+                py: 1.5,
+                borderRadius: 1,
+                overflowX: "auto",
+                mb: 2,
+                fontFamily: "monospace",
+                fontSize: "0.875rem",
+                ...codeBlockSx,
+              }}
+            >
+              {`name == "John" AND (status == active OR status == pending)
+(price > 100 AND price < 500) OR category == sale`}
+            </Box>
+            <Typography variant="body2" paragraph sx={bodySx}>
+              Without parentheses, <strong>AND</strong> binds tighter than{" "}
+              <strong>OR</strong>:
+            </Typography>
+            <Box
+              component="pre"
+              sx={{
+                bgcolor: "grey.100",
+                borderLeft: 4,
+                borderColor: "primary.main",
+                px: 2,
+                py: 1.5,
+                borderRadius: 1,
+                overflowX: "auto",
+                mb: 2,
+                fontFamily: "monospace",
+                fontSize: "0.875rem",
+                ...codeBlockSx,
+              }}
+            >
+              {`a = 1 OR b = 2 AND c = 3
+// is the same as: a = 1 OR (b = 2 AND c = 3)`}
+            </Box>
+
+            <Typography variant="h6" gutterBottom sx={sectionTitleSx}>
+              NOT (Negation)
+            </Typography>
+            <Typography variant="body2" paragraph sx={bodySx}>
+              Prefix a group with <strong>NOT</strong> to negate it:
+            </Typography>
+            <Box
+              component="pre"
+              sx={{
+                bgcolor: "grey.100",
+                borderLeft: 4,
+                borderColor: "primary.main",
+                px: 2,
+                py: 1.5,
+                borderRadius: 1,
+                overflowX: "auto",
+                mb: 2,
+                fontFamily: "monospace",
+                fontSize: "0.875rem",
+                ...codeBlockSx,
+              }}
+            >
+              {`NOT (status == inactive OR status == deleted)`}
+            </Box>
+
+            <Divider sx={{ my: 2, ...dividerSx }} />
+
+            {/* ── Examples ─────────────────────────────────────────────────── */}
+            <Typography variant="h6" gutterBottom sx={sectionTitleSx}>
+              Examples
+            </Typography>
+
+            {[
+              {
+                label: "Exact match",
+                code: `name == "Alice"`,
+              },
+              {
+                label: "Contains substring",
+                code: `name contains "ali"`,
+              },
+              {
+                label: "Numeric comparison",
+                code: `duration > 30`,
+              },
+              {
+                label: "Multiple conditions (AND)",
+                code: `name == "Alice" AND duration > 30`,
+              },
+              {
+                label: "Multiple conditions (OR)",
+                code: `status == active OR status == pending`,
+              },
+              {
+                label: "Mixed AND/OR with grouping",
+                code: `name == "Alice" AND (status == active OR status == pending)`,
+              },
+              {
+                label: "Nested groups",
+                code: `(price > 100 AND price < 500) OR (category == sale AND stock > 0)`,
+              },
+              {
+                label: "NOT negation",
+                code: `NOT (status == deleted OR status == archived)`,
+              },
+            ].map(({ label, code }) => (
+              <Box key={label} mb={1.5}>
+                <Typography
+                  variant="caption"
+                  sx={{
+                    color: "text.secondary",
+                    textTransform: "uppercase",
+                    letterSpacing: 0.5,
+                    ...exampleLabelSx,
+                  }}
+                >
+                  {label}
+                </Typography>
+                <Box
+                  component="pre"
+                  sx={{
+                    bgcolor: "grey.50",
+                    border: 1,
+                    borderColor: "divider",
+                    px: 2,
+                    py: 1,
+                    borderRadius: 1,
+                    overflowX: "auto",
+                    mt: 0.5,
+                    fontFamily: "monospace",
+                    fontSize: "0.875rem",
+                    ...exampleBlockSx,
+                  }}
+                >
+                  {code}
+                </Box>
+              </Box>
+            ))}
+
+            <Divider sx={{ my: 2, ...dividerSx }} />
+
+            {/* ── Tips ─────────────────────────────────────────────────────── */}
+            <Typography variant="h6" gutterBottom sx={sectionTitleSx}>
+              Tips
+            </Typography>
+            <Box component="ul" sx={{ mt: 0, mb: 1, pl: 3, ...listSx }}>
+              {[
+                "Start typing a column name and select it from the suggestion list.",
+                "After picking a column, the suggestion list will show valid operators for that column.",
+                "After entering a value, AND / OR will appear in the suggestion list.",
+                "Use parentheses ( ) to group conditions when mixing AND and OR.",
+                "Prefix a group with NOT to negate it — e.g. NOT (status == deleted).",
+                'Wrap multi-word values in double quotes — e.g. "John Doe".',
+                "AND has higher precedence than OR. Use parentheses to override.",
+                "Syntax errors are highlighted in the text box. Hover the input to see the specific error.",
+                "You can also build queries visually using the filter panel (click the tune icon).",
+              ].map((tip) => (
+                <Typography
+                  key={tip}
+                  component="li"
+                  variant="body2"
+                  gutterBottom
+                  sx={listItemSx}
+                >
+                  {tip}
+                </Typography>
+              ))}
+            </Box>
+
+            <Divider sx={{ my: 2, ...dividerSx }} />
+
+            {/* ── Token Colors ─────────────────────────────────────────────── */}
+            <Typography variant="h6" gutterBottom sx={sectionTitleSx}>
+              Syntax Highlighting
+            </Typography>
+            <Typography variant="body2" paragraph sx={bodySx}>
+              As you type, each part of the query is colorized to help you spot
+              mistakes at a glance:
+            </Typography>
+            <Box component="ul" sx={{ mt: 0, mb: 1, pl: 3, ...listSx }}>
+              {[
+                { color: "primary.main", label: "Blue", desc: "Known column" },
+                {
+                  color: "info.main",
+                  label: "Light blue",
+                  desc: "Custom / unknown column",
+                },
+                { color: "error.main", label: "Red", desc: "Valid operator" },
+                {
+                  color: "text.disabled",
+                  label: "Grey",
+                  desc: "Unrecognized operator (still typing)",
+                },
+                {
+                  color: "secondary.main",
+                  label: "Purple",
+                  desc: "Logical connector — AND / OR / NOT",
+                },
+                {
+                  color: "warning.main",
+                  label: "Orange",
+                  desc: "Parentheses ( )",
+                },
+                { color: "text.primary", label: "Default", desc: "Value" },
+              ].map(({ color, label, desc }) => (
+                <Typography
+                  key={label}
+                  component="li"
+                  variant="body2"
+                  gutterBottom
+                  sx={colorLegendItemSx}
+                >
+                  <Box
+                    component="span"
+                    sx={{
+                      display: "inline-block",
+                      width: 12,
+                      height: 12,
+                      borderRadius: "50%",
+                      bgcolor: color,
+                      mr: 1,
+                      verticalAlign: "middle",
+                      ...colorSwatchSx,
+                    }}
+                  />
+                  <Box component="strong" sx={{ color }}>
+                    {label}
+                  </Box>{" "}
+                  — {desc}
+                </Typography>
+              ))}
+            </Box>
+          </>
+        )}
       </DialogContent>
 
       <DialogActions sx={actionsSx}>
@@ -506,6 +510,7 @@ const QueryTextBox = ({
   relatedOperators,
   placeholder = "",
   endAdornment,
+  helpContent,
   sx = {},
   ...props
 }) => {
@@ -1034,6 +1039,7 @@ const QueryTextBox = ({
       <HelpModal
         open={helpOpen}
         onClose={() => setHelpOpen(false)}
+        helpContent={helpContent}
         sx={helpModalSx}
       />
     </Box>
