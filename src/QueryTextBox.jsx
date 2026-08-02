@@ -21,6 +21,7 @@ import HelpOutlineIcon from "@mui/icons-material/HelpOutline";
 import CloseIcon from "@mui/icons-material/Close";
 import { useState, useRef, useEffect, useMemo } from "react";
 import { useTheme } from "@mui/material/styles";
+import ReactMarkdown from "react-markdown";
 import { validateQuery, tokenizeQuery } from "./helpers";
 
 // Default highlight palette per token type. Callers can override any of these
@@ -100,7 +101,117 @@ const HelpModal = ({ open, onClose, helpContent, sx = {} }) => {
       </DialogTitle>
 
       <DialogContent dividers sx={contentSx}>
-        {helpContent || (
+        {helpContent ? (
+          typeof helpContent === "string" ? (
+            <ReactMarkdown
+              components={{
+                h1: ({ children }) => (
+                  <Typography variant="h5" gutterBottom sx={sectionTitleSx}>
+                    {children}
+                  </Typography>
+                ),
+                h2: ({ children }) => (
+                  <Typography variant="h6" gutterBottom sx={sectionTitleSx}>
+                    {children}
+                  </Typography>
+                ),
+                h3: ({ children }) => (
+                  <Typography
+                    variant="subtitle1"
+                    gutterBottom
+                    sx={{ fontWeight: 600, ...sectionTitleSx }}
+                  >
+                    {children}
+                  </Typography>
+                ),
+                p: ({ children }) => (
+                  <Typography variant="body2" paragraph sx={bodySx}>
+                    {children}
+                  </Typography>
+                ),
+                ul: ({ children }) => (
+                  <Box component="ul" sx={{ mt: 0, mb: 2, pl: 3, ...listSx }}>
+                    {children}
+                  </Box>
+                ),
+                ol: ({ children }) => (
+                  <Box component="ol" sx={{ mt: 0, mb: 2, pl: 3, ...listSx }}>
+                    {children}
+                  </Box>
+                ),
+                li: ({ children }) => (
+                  <Typography
+                    component="li"
+                    variant="body2"
+                    gutterBottom
+                    sx={listItemSx}
+                  >
+                    {children}
+                  </Typography>
+                ),
+                code: ({ inline, children }) =>
+                  inline ? (
+                    <Chip
+                      label={children}
+                      size="small"
+                      sx={{ fontFamily: "monospace", ...chipSx }}
+                    />
+                  ) : (
+                    <Box
+                      component="pre"
+                      sx={{
+                        bgcolor: "grey.100",
+                        borderLeft: 4,
+                        borderColor: "primary.main",
+                        px: 2,
+                        py: 1.5,
+                        borderRadius: 1,
+                        overflowX: "auto",
+                        mb: 2,
+                        fontFamily: "monospace",
+                        fontSize: "0.875rem",
+                        ...codeBlockSx,
+                      }}
+                    >
+                      {children}
+                    </Box>
+                  ),
+                pre: ({ children }) => <>{children}</>,
+                hr: () => <Divider sx={{ my: 2, ...dividerSx }} />,
+                strong: ({ children }) => <strong>{children}</strong>,
+                a: ({ href, children }) => (
+                  <Typography
+                    component="a"
+                    href={href}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    variant="body2"
+                    sx={{ color: "primary.main" }}
+                  >
+                    {children}
+                  </Typography>
+                ),
+                blockquote: ({ children }) => (
+                  <Box
+                    sx={{
+                      borderLeft: 4,
+                      borderColor: "grey.300",
+                      pl: 2,
+                      my: 1,
+                      color: "text.secondary",
+                    }}
+                  >
+                    {children}
+                  </Box>
+                ),
+              }}
+            >
+              {helpContent}
+            </ReactMarkdown>
+          ) : (
+            helpContent
+          )
+        ) : (
           <>
             <Typography variant="h6" gutterBottom sx={sectionTitleSx}>
               Overview

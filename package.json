@@ -49,6 +49,9 @@
   "publishConfig": {
     "access": "public"
   },
+  "dependencies": {
+    "react-markdown": "^9.0.1"
+  },
   "devDependencies": {
     "@vitejs/plugin-react": "^4.3.4",
     "prettier": "^3.9.6",
