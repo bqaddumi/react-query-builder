@@ -610,6 +610,45 @@ const QueryTextBox = ({
     const lastWord = words[words.length - 1] || "";
     const secondLastWord = words[words.length - 2] || "";
 
+    // Check if the last N words form a multi-word operator (e.g., "NOT IN", "IS NULL", "IS NOT NULL")
+    const lastTwoWords =
+      words.length >= 2
+        ? `${words[words.length - 2]} ${words[words.length - 1]}`
+        : "";
+    const lastThreeWords =
+      words.length >= 3
+        ? `${words[words.length - 3]} ${words[words.length - 2]} ${words[words.length - 1]}`
+        : "";
+
+    const isLastMultiWordOp =
+      allAvailableOperators.some(
+        (op) => op.toUpperCase() === lastThreeWords.toUpperCase(),
+      ) ||
+      allAvailableOperators.some(
+        (op) => op.toUpperCase() === lastTwoWords.toUpperCase(),
+      );
+
+    // Find the column that precedes the (possibly multi-word) operator
+    const columnForMultiWordOp = (() => {
+      if (
+        lastThreeWords &&
+        allAvailableOperators.some(
+          (op) => op.toUpperCase() === lastThreeWords.toUpperCase(),
+        )
+      ) {
+        return words[words.length - 4] || "";
+      }
+      if (
+        lastTwoWords &&
+        allAvailableOperators.some(
+          (op) => op.toUpperCase() === lastTwoWords.toUpperCase(),
+        )
+      ) {
+        return words[words.length - 3] || "";
+      }
+      return "";
+    })();
+
     // A "column position" is the start of the query, or right after an AND/OR.
     // Anything typed there that is NOT a known column is treated as a custom column.
     const isAfterColumnPosition =
@@ -624,6 +663,25 @@ const QueryTextBox = ({
     ) {
       // Empty input or right after AND/OR or ( → suggest known columns as starting hints
       nextSuggestions = columns;
+    } else if (isLastMultiWordOp) {
+      // Last words form a multi-word operator (NOT IN, IS NULL, IS NOT NULL) → suggest AND/OR (value position next, or logical for null ops)
+      const matchedOp =
+        allAvailableOperators.find(
+          (op) => op.toUpperCase() === lastThreeWords.toUpperCase(),
+        ) ||
+        allAvailableOperators.find(
+          (op) => op.toUpperCase() === lastTwoWords.toUpperCase(),
+        );
+      const nullOps = ["IS NULL", "IS NOT NULL", "is_null", "is_not_null"];
+      if (
+        matchedOp &&
+        nullOps.some((n) => n.toUpperCase() === matchedOp.toUpperCase())
+      ) {
+        nextSuggestions = defaultOperators;
+      } else {
+        // Non-null multi-word op (like NOT IN) — user needs to type a value next, then AND/OR
+        nextSuggestions = defaultOperators;
+      }
     } else if (columns.includes(lastWord)) {
       // Known column just typed → suggest its specific operators
       nextSuggestions = columnsOperator[lastWord].operators;
@@ -638,6 +696,9 @@ const QueryTextBox = ({
       nextSuggestions = defaultOperators;
     } else if (allAvailableOperators.includes(lastWord)) {
       // Custom column + any available operator → suggest AND/OR (after the value)
+      nextSuggestions = defaultOperators;
+    } else if (columnForMultiWordOp && columns.includes(columnForMultiWordOp)) {
+      // We're in the value position after a multi-word op on a known column → suggest AND/OR
       nextSuggestions = defaultOperators;
     } else {
       // Anywhere else (e.g., a value position) → suggest AND/OR
