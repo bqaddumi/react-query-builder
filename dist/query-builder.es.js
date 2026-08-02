@@ -7357,12 +7357,24 @@ condition1 OR  condition2`
         }),
         ...i || []
       ])
-    ), H = $.trim().split(/\s+/).filter(Boolean), _e = H[H.length - 1] || "", Nt = H[H.length - 2] || "", Pt = H.length >= 2 ? `${H[H.length - 2]} ${H[H.length - 1]}` : "", $t = H.length >= 3 ? `${H[H.length - 3]} ${H[H.length - 2]} ${H[H.length - 1]}` : "", ko = Z.some((xe) => xe.toUpperCase() === $t.toUpperCase()) || Z.some((xe) => xe.toUpperCase() === Pt.toUpperCase()), Qn = $t && Z.some((xe) => xe.toUpperCase() === $t.toUpperCase()) ? H[H.length - 4] || "" : Pt && Z.some((xe) => xe.toUpperCase() === Pt.toUpperCase()) && H[H.length - 3] || "", _o = !Nt || n.includes(Nt);
+    ), H = $.trim().split(/\s+/).filter(Boolean), _e = H[H.length - 1] || "", Nt = H[H.length - 2] || "", Pt = H.length >= 2 ? `${H[H.length - 2]} ${H[H.length - 1]}` : "", $t = H.length >= 3 ? `${H[H.length - 3]} ${H[H.length - 2]} ${H[H.length - 1]}` : "", ko = Z.some(
+      (xe) => xe.toUpperCase() === $t.toUpperCase()
+    ) || Z.some(
+      (xe) => xe.toUpperCase() === Pt.toUpperCase()
+    ), Qn = $t && Z.some(
+      (xe) => xe.toUpperCase() === $t.toUpperCase()
+    ) ? H[H.length - 4] || "" : Pt && Z.some(
+      (xe) => xe.toUpperCase() === Pt.toUpperCase()
+    ) && H[H.length - 3] || "", _o = !Nt || n.includes(Nt);
     let we;
     if (!$.trim() || n.includes(_e) || _e === "(")
       we = V;
     else if (ko) {
-      const xe = Z.find((lt) => lt.toUpperCase() === $t.toUpperCase()) || Z.find((lt) => lt.toUpperCase() === Pt.toUpperCase());
+      const xe = Z.find(
+        (lt) => lt.toUpperCase() === $t.toUpperCase()
+      ) || Z.find(
+        (lt) => lt.toUpperCase() === Pt.toUpperCase()
+      );
       xe && ["IS NULL", "IS NOT NULL", "is_null", "is_not_null"].some((lt) => lt.toUpperCase() === xe.toUpperCase()), we = n;
     } else V.includes(_e) ? we = e[_e].operators : _o ? we = Z : (V.includes(Nt) && e[Nt].operators.includes(_e) || Z.includes(_e) || Qn && V.includes(Qn), we = n);
     P(we), j(we);
