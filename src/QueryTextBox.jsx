@@ -1069,21 +1069,20 @@ const QueryTextBox = ({
                       ...adornmentBoxSx,
                     }}
                   >
-                    {/* Clear button — visible only when there is text */}
-                    {inputValue && (
-                      <IconButton
-                        onClick={() => {
-                          setInputValue("");
-                          onClear?.();
-                          inputRef.current?.focus();
-                        }}
-                        aria-label="Clear query"
-                        size="small"
-                        onMouseDown={(e) => e.preventDefault()}
-                      >
-                        <CloseIcon fontSize="small" />
-                      </IconButton>
-                    )}
+                    {/* Clear button — always rendered to keep adornment width stable */}
+                    <IconButton
+                      onClick={() => {
+                        setInputValue("");
+                        onClear?.();
+                        inputRef.current?.focus();
+                      }}
+                      aria-label="Clear query"
+                      size="small"
+                      onMouseDown={(e) => e.preventDefault()}
+                      sx={{ visibility: inputValue ? "visible" : "hidden" }}
+                    >
+                      <CloseIcon fontSize="small" />
+                    </IconButton>
 
                     {/* Help button — opens the query-syntax modal */}
                     <Tooltip

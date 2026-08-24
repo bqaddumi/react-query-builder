@@ -14245,7 +14245,7 @@ condition1 OR  condition2`
                         ...R
                       },
                       children: [
-                        j && /* @__PURE__ */ T(
+                        /* @__PURE__ */ T(
                           bt,
                           {
                             onClick: () => {
@@ -14255,6 +14255,7 @@ condition1 OR  condition2`
                             "aria-label": "Clear query",
                             size: "small",
                             onMouseDown: (k) => k.preventDefault(),
+                            sx: { visibility: j ? "visible" : "hidden" },
                             children: /* @__PURE__ */ T(Ul, { fontSize: "small" })
                           }
                         ),
