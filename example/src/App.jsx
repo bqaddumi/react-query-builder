@@ -1,5 +1,15 @@
-import React, { useState } from "react";
-import { Box, Container, Typography, Paper } from "@mui/material";
+import React, { useMemo, useState } from "react";
+import {
+  Box,
+  Container,
+  Typography,
+  Paper,
+  IconButton,
+  CssBaseline,
+  ThemeProvider,
+  createTheme,
+} from "@mui/material";
+import { DarkMode, LightMode } from "@mui/icons-material";
 import QueryBuilder from "../../src/index.jsx";
 
 const columnsOperator = {
@@ -35,6 +45,12 @@ const defaultOperators = ["AND", "OR"];
 
 export default function App() {
   const [result, setResult] = useState(null);
+  const [mode, setMode] = useState("light");
+
+  const theme = useMemo(
+    () => createTheme({ palette: { mode } }),
+    [mode],
+  );
 
   const handleApply = (groupTree) => {
     console.log("Query tree:", groupTree);
@@ -42,67 +58,72 @@ export default function App() {
   };
 
   return (
-    <Container maxWidth="lg" sx={{ py: 4 }}>
-      <Typography variant="h4" gutterBottom>
-        Query Builder Example
-      </Typography>
-
-      <Paper sx={{ p: 2, mb: 3 }}>
-        <QueryBuilder
-          columnsOperator={columnsOperator}
-          defaultOperators={defaultOperators}
-          relatedOperators={relatedOperators}
-          handleApply={handleApply}
-          placeholder="Type a query... e.g. Trademark = Audi AND Cylinders > 4"
-          sx={{
-            root: { height: "52px" },
-            textBoxContainer: { height: "52px" },
-            textBox: {
-              tokenColors: {
-                value: "#212121",
-              },
-              input: { height: "52px" },
-            },
-            popover: {
-              "& .MuiPopover-paper": {
-                width: { xs: "calc(100vw - 32px)", sm: 520 },
-                maxWidth: "calc(100vw - 32px)",
-              },
-            },
-            popoverContent: {
-              "& .MuiInputBase-input, & .MuiSelect-select": {
-                py: "4px",
-                minHeight: "unset",
-                fontSize: "12px",
-              },
-              "& .MuiButton-root": {
-                textTransform: "none",
-                fontSize: "12px",
-              },
-            },
-          }}
-        />
-      </Paper>
-
-      {result && (
-        <Paper sx={{ p: 2 }}>
-          <Typography variant="h6" gutterBottom>
-            Query Result (JSON):
+    <ThemeProvider theme={theme}>
+      <CssBaseline />
+      <Container maxWidth="lg" sx={{ py: 4 }}>
+        <Box display="flex" alignItems="center" mb={2}>
+          <Typography variant="h4" flex={1}>
+            Query Builder Example
           </Typography>
-          <Box
-            component="pre"
-            sx={{
-              bgcolor: "grey.100",
-              p: 2,
-              borderRadius: 1,
-              overflow: "auto",
-              fontSize: "0.85rem",
-            }}
+          <IconButton
+            onClick={() => setMode((m) => (m === "light" ? "dark" : "light"))}
+            color="inherit"
           >
-            {JSON.stringify(result, null, 2)}
-          </Box>
+            {mode === "light" ? <DarkMode /> : <LightMode />}
+          </IconButton>
+        </Box>
+
+        <Paper sx={{ p: 2, mb: 3 }}>
+          <QueryBuilder
+            columnsOperator={columnsOperator}
+            defaultOperators={defaultOperators}
+            relatedOperators={relatedOperators}
+            handleApply={handleApply}
+            placeholder="Type a query... e.g. Trademark = Audi AND Cylinders > 4"
+            sx={{
+              root: { height: "52px" },
+              textBoxContainer: { height: "52px" },
+              textBox: {
+                tokenColors: {
+                  value: "#212121",
+                },
+                input: { height: "52px" },
+              },
+              body: {
+                "& .MuiInputBase-input, & .MuiSelect-select": {
+                  py: "4px",
+                  minHeight: "unset",
+                  fontSize: "12px",
+                },
+                "& .MuiButton-root": {
+                  textTransform: "none",
+                  fontSize: "12px",
+                },
+              },
+            }}
+          />
         </Paper>
-      )}
-    </Container>
+
+        {result && (
+          <Paper sx={{ p: 2 }}>
+            <Typography variant="h6" gutterBottom>
+              Query Result (JSON):
+            </Typography>
+            <Box
+              component="pre"
+              sx={{
+                bgcolor: "grey.100",
+                p: 2,
+                borderRadius: 1,
+                overflow: "auto",
+                fontSize: "0.85rem",
+              }}
+            >
+              {JSON.stringify(result, null, 2)}
+            </Box>
+          </Paper>
+        )}
+      </Container>
+    </ThemeProvider>
   );
 }

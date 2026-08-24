@@ -1,7 +1,8 @@
-import { useEffect, useMemo, useState } from "react";
-import Popover from "@mui/material/Popover";
+import { useEffect, useMemo, useRef, useState } from "react";
+import Dialog from "@mui/material/Dialog";
 import TuneIcon from "@mui/icons-material/Tune";
-import { IconButton, Box, Typography } from "@mui/material";
+import { Close, RestartAlt, Search } from "@mui/icons-material";
+import { IconButton, Box, Button, Typography, Tooltip } from "@mui/material";
 import QueryForm from "./QueryForm";
 import QueryTextBox from "./QueryTextBox";
 import {
@@ -9,6 +10,8 @@ import {
   flattenGroupToQueries,
   convertGroupToText,
 } from "./helpers";
+
+const ACCENT = "#007aff";
 
 export default function QueryBuilder({
   columnsOperator = {},
@@ -24,14 +27,19 @@ export default function QueryBuilder({
     textBoxContainer: textBoxContainerSx,
     textBox: textBoxSx,
     iconButton: iconButtonSx,
-    popover: popoverSx,
-    popoverPaper: popoverPaperSx,
-    popoverContent: popoverContentSx,
+    dialog: dialogSx,
+    dialogPaper: dialogPaperSx,
+    header: headerSx,
+    body: bodySx,
     title: titleSx,
     queryForm: queryFormSx,
+    // Legacy aliases from when this was a Popover
+    popover: legacyPopoverSx,
+    popoverPaper: legacyPopoverPaperSx,
+    popoverContent: legacyPopoverContentSx,
   } = sx;
 
-  const [anchorEl, setAnchorEl] = useState(null);
+  const [open, setOpen] = useState(false);
   const [groupTree, setGroupTree] = useState(null);
 
   const [dynamicColumnsOperator, setDynamicColumnsOperator] =
@@ -52,12 +60,12 @@ export default function QueryBuilder({
     [columnsOperator, relatedOperators],
   );
 
-  const handleClick = (event) => {
-    setAnchorEl(event.currentTarget);
+  const handleClick = () => {
+    setOpen(true);
   };
 
   const handleClose = () => {
-    setAnchorEl(null);
+    setOpen(false);
   };
 
   const registerNewColumns = (tree) => {
@@ -96,13 +104,20 @@ export default function QueryBuilder({
     }
   };
 
+  const handleClear = () => {
+    setGroupTree(null);
+    if (handleApply) {
+      handleApply(null);
+    }
+  };
+
+  const [draftGroup, setDraftGroup] = useState(null);
+  const applyRef = useRef(null);
+
   const queryText = useMemo(
     () => (groupTree ? convertGroupToText(groupTree) : ""),
     [groupTree],
   );
-
-  const open = Boolean(anchorEl);
-  const id = open ? "simple-popover" : undefined;
 
   return (
     <Box sx={rootSx}>
@@ -117,6 +132,7 @@ export default function QueryBuilder({
           columnsOperator={dynamicColumnsOperator}
           defaultOperators={defaultOperators}
           onApplyClicked={onApplyClicked}
+          onClear={handleClear}
           queryText={queryText}
           relatedOperators={relatedOperators}
           placeholder={placeholder}
@@ -124,7 +140,6 @@ export default function QueryBuilder({
           sx={textBoxSx}
           endAdornment={
             <IconButton
-              aria-describedby={id}
               onClick={handleClick}
               size="small"
               onMouseDown={(e) => e.preventDefault()}
@@ -136,48 +151,130 @@ export default function QueryBuilder({
         />
       </Box>
 
-      <Popover
-        id={id}
+      <Dialog
         open={open}
-        anchorEl={anchorEl}
         onClose={handleClose}
-        anchorOrigin={{
-          vertical: "bottom",
-          horizontal: "left",
-        }}
+        maxWidth="lg"
+        fullWidth
         slotProps={{
           paper: {
             sx: {
-              width: {
-                xs: "calc(100vw - 32px)",
-                sm: 720,
-                md: 880,
-                lg: 1040,
-              },
-              maxWidth: "calc(100vw - 32px)",
-              maxHeight: "calc(100vh - 96px)",
-              overflowY: "auto",
-              boxSizing: "border-box",
-              ...popoverPaperSx,
+              borderRadius: "10px",
+              overflow: "hidden",
+              ...dialogPaperSx,
+              ...legacyPopoverPaperSx,
             },
           },
         }}
-        sx={{ ...popoverSx }}
+        sx={{ ...dialogSx, ...legacyPopoverSx }}
       >
-        <Box sx={{ padding: { xs: 1.5, sm: 2 }, ...popoverContentSx }}>
-          <Typography variant="h6" sx={titleSx}>
+        {/* Header */}
+        <Box
+          sx={{
+            display: "flex",
+            alignItems: "center",
+            gap: 1,
+            height: 52,
+            pl: 2.5,
+            pr: 1.5,
+            bgcolor: ACCENT,
+            color: "#fff",
+            ...headerSx,
+          }}
+        >
+          <Typography
+            component="h2"
+            fontSize={17}
+            fontWeight={500}
+            flex={1}
+            sx={titleSx}
+          >
             Query Builder
           </Typography>
+          <Tooltip title="Close">
+            <IconButton
+              size="small"
+              aria-label="Close"
+              onClick={handleClose}
+              sx={{ color: "#fff" }}
+            >
+              <Close sx={{ fontSize: 18 }} />
+            </IconButton>
+          </Tooltip>
+        </Box>
 
+        {/* Body */}
+        <Box
+          sx={{
+            p: 2,
+            overflow: "auto",
+            bgcolor: "background.default",
+            maxHeight: "min(60vh, 560px)",
+            ...bodySx,
+            ...legacyPopoverContentSx,
+          }}
+        >
           <QueryForm
             columnsOperator={dynamicColumnsOperator}
             handleApplyFilters={handleApplyFilters}
+            onCancel={handleClose}
+            onGroupChange={setDraftGroup}
+            applyRef={applyRef}
             defaultOperators={defaultOperators}
             groupTree={groupTree}
             sx={queryFormSx}
           />
         </Box>
-      </Popover>
+
+        {/* Footer */}
+        <Box
+          sx={{
+            display: "flex",
+            alignItems: "center",
+            gap: 1,
+            flexWrap: "wrap",
+            px: 2.5,
+            py: 1.5,
+            borderTop: "1px solid",
+            borderColor: "divider",
+            bgcolor: "background.paper",
+          }}
+        >
+          <Button
+            size="small"
+            startIcon={<RestartAlt sx={{ fontSize: 16 }} />}
+            onClick={() => handleApplyFilters(null)}
+            sx={{ textTransform: "none", fontSize: 13 }}
+          >
+            Reset
+          </Button>
+          <Box sx={{ flex: 1 }} />
+          <Button
+            variant="outlined"
+            size="small"
+            onClick={handleClose}
+            sx={{ textTransform: "none", fontSize: 13 }}
+          >
+            Cancel
+          </Button>
+          <Button
+            variant="contained"
+            size="small"
+            startIcon={<Search sx={{ fontSize: 16 }} />}
+            onClick={() => {
+              if (applyRef.current) applyRef.current();
+            }}
+            sx={{
+              textTransform: "none",
+              fontSize: 13,
+              bgcolor: ACCENT,
+              "&:hover": { bgcolor: "#0062cc" },
+            }}
+          >
+            Apply filter
+          </Button>
+        </Box>
+      </Dialog>
     </Box>
   );
 }

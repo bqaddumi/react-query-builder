@@ -5,20 +5,32 @@ import {
   IconButton,
   MenuItem,
   Select,
-  Stack,
+  Switch,
   TextField,
   Tooltip,
-  Typography,
-  ToggleButton,
-  ToggleButtonGroup,
-  Radio,
+  FormControlLabel,
 } from "@mui/material";
-import { Add, Close } from "@mui/icons-material";
+import {
+  Add,
+  Close,
+  CreateNewFolderOutlined,
+  DeleteOutline,
+} from "@mui/icons-material";
 import { isNullOperator } from "./helpers";
 
-const fieldSx = {
-  flex: { xs: "1 1 100%", sm: 1 },
-  minWidth: 0,
+const ACCENT = "#007aff";
+
+const controlSx = {
+  borderRadius: "4px",
+  "& .MuiOutlinedInput-notchedOutline": { borderColor: "divider" },
+  "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
+    borderColor: ACCENT,
+    borderWidth: "1px",
+  },
+  "& .MuiSelect-select, & .MuiOutlinedInput-input": {
+    py: "7px",
+    fontSize: 13.5,
+  },
 };
 
 function createRule() {
@@ -34,6 +46,44 @@ function createGroup(combinator = "AND") {
   };
 }
 
+const JoinToggle = ({ value, onChange }) => (
+  <Box
+    role="group"
+    aria-label="Combine conditions with"
+    sx={{
+      display: "inline-flex",
+      border: "1px solid",
+      borderColor: ACCENT,
+      borderRadius: "4px",
+      overflow: "hidden",
+    }}
+  >
+    {["AND", "OR"].map((join) => (
+      <Box
+        key={join}
+        component="button"
+        type="button"
+        aria-pressed={value === join}
+        onClick={() => onChange(join)}
+        sx={{
+          cursor: "pointer",
+          border: 0,
+          px: 1.5,
+          py: "3px",
+          fontFamily: "inherit",
+          fontSize: 11.5,
+          fontWeight: 700,
+          letterSpacing: ".05em",
+          bgcolor: value === join ? ACCENT : "transparent",
+          color: value === join ? "#fff" : ACCENT,
+        }}
+      >
+        {join}
+      </Box>
+    ))}
+  </Box>
+);
+
 const RuleRow = ({
   rule,
   index,
@@ -47,11 +97,14 @@ const RuleRow = ({
   return (
     <Box
       sx={{
-        display: "flex",
-        flexDirection: { xs: "column", sm: "row" },
-        gap: { xs: 1, sm: 1.5 },
-        alignItems: { xs: "stretch", sm: "center" },
-        py: 0.5,
+        display: "grid",
+        gap: 1,
+        alignItems: "center",
+        gridTemplateColumns: {
+          xs: "1fr 1fr",
+          sm: "1fr 150px 1.4fr 32px",
+        },
+        mb: 1,
       }}
     >
       <Select
@@ -60,13 +113,13 @@ const RuleRow = ({
         onChange={(e) => onChange(index, "column", e.target.value)}
         displayEmpty
         fullWidth
-        sx={{ ...fieldSx, ...columnSelectSx }}
+        sx={{ ...controlSx, ...columnSelectSx }}
       >
-        <MenuItem value="" disabled>
+        <MenuItem value="" disabled sx={{ fontSize: 13.5 }}>
           Select Column
         </MenuItem>
         {Object.keys(columnsOperator).map((key) => (
-          <MenuItem key={key} value={key}>
+          <MenuItem key={key} value={key} sx={{ fontSize: 13.5 }}>
             {key}
           </MenuItem>
         ))}
@@ -79,42 +132,42 @@ const RuleRow = ({
         displayEmpty
         disabled={!rule.column}
         fullWidth
-        sx={{ ...fieldSx, ...operatorSelectSx }}
+        sx={{ ...controlSx, ...operatorSelectSx }}
       >
-        <MenuItem value="" disabled>
+        <MenuItem value="" disabled sx={{ fontSize: 13.5 }}>
           Select Operator
         </MenuItem>
         {rule.column &&
           columnsOperator[rule.column]?.operators.map((operator) => (
-            <MenuItem key={operator} value={operator}>
+            <MenuItem key={operator} value={operator} sx={{ fontSize: 13.5 }}>
               {operator}
             </MenuItem>
           ))}
       </Select>
 
-      {!isNullOperator(rule.operator) && (
+      {!isNullOperator(rule.operator) ? (
         <TextField
           size="small"
           value={rule.value}
           onChange={(e) => onChange(index, "value", e.target.value)}
           placeholder="Enter value"
           fullWidth
-          sx={{ ...fieldSx, ...valueInputSx }}
+          sx={{ ...controlSx, ...valueInputSx }}
         />
+      ) : (
+        <Box />
       )}
 
-      <Tooltip title="Delete Rule">
+      <Tooltip title="Remove condition">
         <IconButton
           onClick={() => onDelete(index)}
-          color="error"
           size="small"
           sx={{
-            alignSelf: { xs: "flex-end", sm: "center" },
-            flex: { sm: "0 0 auto" },
+            alignSelf: "center",
             ...deleteButtonSx,
           }}
         >
-          <Close fontSize="small" />
+          <Close sx={{ fontSize: 15 }} />
         </IconButton>
       </Tooltip>
     </Box>
@@ -128,12 +181,11 @@ const RuleGroup = ({
   onChange,
   onDelete,
   isRoot,
+  depth = 0,
   sx = {},
 }) => {
-  const handleCombinatorChange = (_, newVal) => {
-    if (newVal !== null) {
-      onChange(path, { ...group, combinator: newVal });
-    }
+  const handleCombinatorChange = (newVal) => {
+    onChange(path, { ...group, combinator: newVal });
   };
 
   const handleNotToggle = () => {
@@ -180,111 +232,94 @@ const RuleGroup = ({
 
   return (
     <Box
+      role="group"
+      aria-label={`${group.not ? "NOT " : ""}${group.combinator} group`}
       sx={{
-        border: isRoot ? "none" : "1px solid",
+        border: "1px solid",
         borderColor: "divider",
-        borderRadius: 1,
-        p: isRoot ? 0 : 1.5,
-        ml: isRoot ? 0 : 2,
-        mb: 1,
-        bgcolor: isRoot ? "transparent" : "action.hover",
+        borderLeft: "3px solid",
+        borderLeftColor: group.not
+          ? "error.main"
+          : depth > 0
+            ? "primary.light"
+            : ACCENT,
+        borderRadius: "6px",
+        bgcolor: "background.paper",
+        mb: depth > 0 ? 1 : 0,
       }}
     >
-      {/* Group header: NOT toggle + AND/OR combinator + add buttons */}
+      {/* Group header */}
       <Box
         sx={{
           display: "flex",
           alignItems: "center",
-          gap: 1,
-          mb: 1.5,
           flexWrap: "wrap",
+          gap: 1,
+          px: 1.25,
+          py: 1,
         }}
       >
-        <Radio
-          checked={group.not}
-          onClick={handleNotToggle}
-          size="small"
-          sx={{ p: 0.5 }}
+        <FormControlLabel
+          sx={{ m: 0, gap: 0.5 }}
+          control={
+            <Switch
+              size="small"
+              color="error"
+              checked={group.not}
+              onChange={handleNotToggle}
+            />
+          }
+          label="NOT"
+          slotProps={{
+            typography: {
+              sx: {
+                fontSize: 12.5,
+                letterSpacing: ".04em",
+                fontWeight: group.not ? 700 : 500,
+                color: group.not ? "error.main" : "text.secondary",
+              },
+            },
+          }}
         />
-        <Typography variant="body2" sx={{ fontWeight: 500, mr: 0.5 }}>
-          NOT
-        </Typography>
 
-        <ToggleButtonGroup
+        <JoinToggle
           value={group.combinator}
-          exclusive
           onChange={handleCombinatorChange}
-          size="small"
-          sx={{ height: 28 }}
-        >
-          <ToggleButton
-            value="AND"
-            sx={{
-              px: 1.5,
-              py: 0,
-              fontSize: "0.75rem",
-              fontWeight: 600,
-              "&.Mui-selected": {
-                bgcolor: "primary.main",
-                color: "primary.contrastText",
-                "&:hover": { bgcolor: "primary.dark" },
-              },
-            }}
-          >
-            AND
-          </ToggleButton>
-          <ToggleButton
-            value="OR"
-            sx={{
-              px: 1.5,
-              py: 0,
-              fontSize: "0.75rem",
-              fontWeight: 600,
-              "&.Mui-selected": {
-                bgcolor: "primary.main",
-                color: "primary.contrastText",
-                "&:hover": { bgcolor: "primary.dark" },
-              },
-            }}
-          >
-            OR
-          </ToggleButton>
-        </ToggleButtonGroup>
+        />
 
         <Box sx={{ flex: 1 }} />
 
-        <Tooltip title="Add Rule">
-          <IconButton onClick={handleAddRule} size="small" color="primary">
-            <Add fontSize="small" />
-          </IconButton>
-        </Tooltip>
-        <Tooltip title="Add Group">
-          <IconButton
-            onClick={handleAddGroup}
-            size="small"
-            color="primary"
-            sx={{
-              border: "1px solid",
-              borderColor: "primary.main",
-              borderRadius: "50%",
-              width: 28,
-              height: 28,
-            }}
-          >
-            <Add fontSize="small" />
-          </IconButton>
-        </Tooltip>
+        <Button
+          size="small"
+          startIcon={<Add sx={{ fontSize: 15 }} />}
+          onClick={handleAddRule}
+          sx={{ textTransform: "none", fontSize: 12.5, minWidth: 0 }}
+        >
+          Condition
+        </Button>
+        <Button
+          size="small"
+          startIcon={<CreateNewFolderOutlined sx={{ fontSize: 15 }} />}
+          onClick={handleAddGroup}
+          sx={{ textTransform: "none", fontSize: 12.5, minWidth: 0 }}
+        >
+          Group
+        </Button>
         {!isRoot && (
-          <Tooltip title="Delete Group">
-            <IconButton onClick={() => onDelete()} color="error" size="small">
-              <Close fontSize="small" />
+          <Tooltip title="Remove group">
+            <IconButton
+              onClick={() => onDelete()}
+              size="small"
+              aria-label="Remove group"
+            >
+              <DeleteOutline sx={{ fontSize: 16 }} />
             </IconButton>
           </Tooltip>
         )}
       </Box>
 
       {/* Rules and sub-groups */}
-      <Stack spacing={1}>
+      <Box sx={{ px: 1.25, pb: 1.25 }}>
         {group.rules.map((item, index) =>
           item.type === "group" ? (
             <RuleGroup
@@ -295,6 +330,7 @@ const RuleGroup = ({
               onChange={handleSubGroupChange}
               onDelete={() => handleDeleteSubGroup(index)}
               isRoot={false}
+              depth={depth + 1}
               sx={sx}
             />
           ) : (
@@ -309,7 +345,7 @@ const RuleGroup = ({
             />
           ),
         )}
-      </Stack>
+      </Box>
     </Box>
   );
 };
@@ -317,6 +353,9 @@ const RuleGroup = ({
 const QueryForm = ({
   columnsOperator,
   handleApplyFilters,
+  onCancel,
+  onGroupChange,
+  applyRef,
   defaultOperators,
   groupTree: groupTreeProp,
   sx = {},
@@ -341,15 +380,21 @@ const QueryForm = ({
     }
   }, [groupTreeProp]);
 
+  useEffect(() => {
+    if (applyRef) {
+      applyRef.current = () => handleApplyFilters(rootGroup);
+    }
+  });
+
   const handleGroupChange = (_path, updatedGroup) => {
     setRootGroup(updatedGroup);
+    onGroupChange?.(updatedGroup);
   };
 
   return (
     <Box
       sx={{
         width: "100%",
-        padding: { xs: 1, sm: 2 },
         boxSizing: "border-box",
         ...rootSx,
       }}
@@ -361,30 +406,9 @@ const QueryForm = ({
         onChange={handleGroupChange}
         onDelete={() => {}}
         isRoot={true}
+        depth={0}
         sx={restSx}
       />
-
-      <Box
-        sx={{
-          display: "flex",
-          justifyContent: "flex-end",
-          gap: 1,
-          mt: 2.5,
-          ...actionsSx,
-        }}
-      >
-        <Button
-          variant="contained"
-          color="primary"
-          onClick={() => handleApplyFilters(rootGroup)}
-          sx={applyButtonSx}
-        >
-          Search
-        </Button>
-        <Button variant="outlined" sx={cancelButtonSx}>
-          Cancel
-        </Button>
-      </Box>
     </Box>
   );
 };
