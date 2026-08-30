@@ -22,7 +22,7 @@ import CloseIcon from "@mui/icons-material/Close";
 import { useState, useRef, useEffect, useMemo } from "react";
 import { useTheme } from "@mui/material/styles";
 import ReactMarkdown from "react-markdown";
-import { validateQuery, tokenizeQuery } from "./helpers";
+import { validateQuery, tokenizeQuery, isNullOperator } from "./helpers";
 
 // Default highlight palette per token type. Callers can override any of these
 // via sx.tokenColors (see README "Token Highlighting").
@@ -36,15 +36,17 @@ const DEFAULT_TOKEN_COLORS = {
   value: "text.primary",
 };
 
-// Default font weights per token type. Callers can override any of these via
-// sx.tokenFontWeights to customize the visual emphasis of each token.
+// Default font weights per token type. All default to 400 to match the input
+// element's weight — different weights cause different character widths, which
+// shifts the caret relative to the colored overlay. Callers who want bold
+// tokens via sx.tokenFontWeights accept that trade-off.
 const DEFAULT_TOKEN_FONT_WEIGHTS = {
   column: 400,
   customColumn: 400,
-  operator: 600,
+  operator: 400,
   unknownOperator: 400,
-  logical: 600,
-  paren: 700,
+  logical: 400,
+  paren: 400,
   value: 400,
 };
 
@@ -623,6 +625,8 @@ const QueryTextBox = ({
   placeholder = "",
   endAdornment,
   helpContent,
+  maxLength,
+  externalInputRef,
   sx = {},
   ...props
 }) => {
@@ -704,6 +708,16 @@ const QueryTextBox = ({
   const adornmentRef = useRef(null);
 
   useEffect(() => {
+    if (externalInputRef) {
+      if (typeof externalInputRef === "function") {
+        externalInputRef(inputRef.current);
+      } else {
+        externalInputRef.current = inputRef.current;
+      }
+    }
+  });
+
+  useEffect(() => {
     if (queryText !== undefined && queryText !== null) {
       setInputValue(queryText);
     }
@@ -781,7 +795,7 @@ const QueryTextBox = ({
       // Empty input or right after AND/OR or ( → suggest known columns as starting hints
       nextSuggestions = columns;
     } else if (isLastMultiWordOp) {
-      // Last words form a multi-word operator (NOT IN, IS NULL, IS NOT NULL) → suggest AND/OR (value position next, or logical for null ops)
+      // Last words form a multi-word operator (NOT IN, IS NULL, IS NOT NULL)
       const matchedOp =
         allAvailableOperators.find(
           (op) => op.toUpperCase() === lastThreeWords.toUpperCase(),
@@ -794,10 +808,11 @@ const QueryTextBox = ({
         matchedOp &&
         nullOps.some((n) => n.toUpperCase() === matchedOp.toUpperCase())
       ) {
+        // Null operators don't need a value → suggest AND/OR
         nextSuggestions = defaultOperators;
       } else {
-        // Non-null multi-word op (like NOT IN) — user needs to type a value next, then AND/OR
-        nextSuggestions = defaultOperators;
+        // Non-null multi-word op (like NOT IN) → user needs to type a value next, no suggestions yet
+        nextSuggestions = [];
       }
     } else if (columns.includes(lastWord)) {
       // Known column just typed → suggest its specific operators
@@ -809,16 +824,16 @@ const QueryTextBox = ({
       columns.includes(secondLastWord) &&
       columnsOperator[secondLastWord].operators.includes(lastWord)
     ) {
-      // Known column + its specific operator → suggest AND/OR (after the value)
-      nextSuggestions = defaultOperators;
+      // Known column + its specific operator just typed → user needs to type a value, no suggestions
+      nextSuggestions = [];
     } else if (allAvailableOperators.includes(lastWord)) {
-      // Custom column + any available operator → suggest AND/OR (after the value)
-      nextSuggestions = defaultOperators;
+      // Custom column + any available operator just typed → user needs to type a value, no suggestions
+      nextSuggestions = [];
     } else if (columnForMultiWordOp && columns.includes(columnForMultiWordOp)) {
-      // We're in the value position after a multi-word op on a known column → suggest AND/OR
+      // A value was typed after a multi-word op on a known column → suggest AND/OR
       nextSuggestions = defaultOperators;
     } else {
-      // Anywhere else (e.g., a value position) → suggest AND/OR
+      // Anywhere else (e.g., a value has been typed) → suggest AND/OR
       nextSuggestions = defaultOperators;
     }
 
@@ -847,7 +862,10 @@ const QueryTextBox = ({
   }, [endAdornment, inputValue, isValid]);
 
   const handleInputChange = (event) => {
-    const value = event.target.value;
+    let value = event.target.value;
+    if (maxLength && value.length > maxLength) {
+      value = value.slice(0, maxLength);
+    }
     setInputValue(value);
     setFilteredSuggestions(
       suggestions.filter((suggestion) =>
@@ -855,6 +873,14 @@ const QueryTextBox = ({
       ),
     );
     setAnchorEl(inputRef.current);
+  };
+
+  const handleKeyDown = (event) => {
+    if (event.key === "Enter" && inputValue && isValid) {
+      event.preventDefault();
+      setAnchorEl(null);
+      onApplyClicked(inputValue);
+    }
   };
 
   // Keep the highlight overlay scrolled in sync with the (possibly overflowing)
@@ -1052,7 +1078,10 @@ const QueryTextBox = ({
               // Pass onScroll via inputProps so it fires on the native <input>
               // element (not the MUI wrapper div). Only the native element
               // fires scroll events when single-line text overflows.
-              inputProps={{ onScroll: handleInputScroll }}
+              inputProps={{
+                onScroll: handleInputScroll,
+                onKeyDown: handleKeyDown,
+              }}
               value={inputValue}
               onChange={handleInputChange}
               onFocus={() => setAnchorEl(inputRef.current)}

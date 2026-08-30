@@ -20,6 +20,8 @@ export default function QueryBuilder({
   handleApply,
   placeholder = "",
   helpContent,
+  maxLength,
+  inputRef: externalInputRef,
   sx = {},
 }) {
   const {
@@ -137,6 +139,8 @@ export default function QueryBuilder({
           relatedOperators={relatedOperators}
           placeholder={placeholder}
           helpContent={helpContent}
+          maxLength={maxLength}
+          externalInputRef={externalInputRef}
           sx={textBoxSx}
           endAdornment={
             <IconButton
