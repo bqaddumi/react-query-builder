@@ -694,6 +694,7 @@ const QueryTextBox = ({
   const [anchorEl, setAnchorEl] = useState(null);
   const [suggestions, setSuggestions] = useState([]);
   const [filteredSuggestions, setFilteredSuggestions] = useState([]);
+  const [highlightedIndex, setHighlightedIndex] = useState(-1);
   const [inputValue, setInputValue] = useState("");
   const [isValid, setIsValid] = useState(true);
   const [validationError, setValidationError] = useState(null);
@@ -706,6 +707,7 @@ const QueryTextBox = ({
   const inputRef = useRef();
   const highlightRef = useRef(null);
   const adornmentRef = useRef(null);
+  const suggestionsListRef = useRef(null);
 
   useEffect(() => {
     if (externalInputRef) {
@@ -861,6 +863,20 @@ const QueryTextBox = ({
     return () => ro.disconnect();
   }, [endAdornment, inputValue, isValid]);
 
+  useEffect(() => {
+    setHighlightedIndex(-1);
+  }, [filteredSuggestions]);
+
+  useEffect(() => {
+    if (highlightedIndex >= 0 && suggestionsListRef.current) {
+      const items =
+        suggestionsListRef.current.querySelectorAll('[role="option"]');
+      if (items[highlightedIndex]) {
+        items[highlightedIndex].scrollIntoView({ block: "nearest" });
+      }
+    }
+  }, [highlightedIndex]);
+
   const handleInputChange = (event) => {
     let value = event.target.value;
     if (maxLength && value.length > maxLength) {
@@ -876,6 +892,36 @@ const QueryTextBox = ({
   };
 
   const handleKeyDown = (event) => {
+    const suggestionsOpen = Boolean(anchorEl) && filteredSuggestions.length > 0;
+
+    if (suggestionsOpen) {
+      if (event.key === "ArrowDown") {
+        event.preventDefault();
+        setHighlightedIndex((prev) =>
+          prev < filteredSuggestions.length - 1 ? prev + 1 : 0,
+        );
+        return;
+      }
+      if (event.key === "ArrowUp") {
+        event.preventDefault();
+        setHighlightedIndex((prev) =>
+          prev > 0 ? prev - 1 : filteredSuggestions.length - 1,
+        );
+        return;
+      }
+      if (event.key === "Enter" && highlightedIndex >= 0) {
+        event.preventDefault();
+        handleSuggestionClick(filteredSuggestions[highlightedIndex]);
+        return;
+      }
+      if (event.key === "Escape") {
+        event.preventDefault();
+        setAnchorEl(null);
+        setHighlightedIndex(-1);
+        return;
+      }
+    }
+
     if (event.key === "Enter" && inputValue && isValid) {
       event.preventDefault();
       setAnchorEl(null);
@@ -1169,16 +1215,24 @@ const QueryTextBox = ({
             ...suggestionsBoxSx,
           }}
         >
-          <List dense sx={suggestionsListSx}>
+          <List
+            dense
+            role="listbox"
+            ref={suggestionsListRef}
+            sx={suggestionsListSx}
+          >
             {filteredSuggestions.map((suggestion, index) => (
-              <ListItem key={index} disablePadding>
+              <ListItem
+                key={index}
+                disablePadding
+                role="option"
+                aria-selected={index === highlightedIndex}
+              >
                 <ListItemButton
-                  // Prevent the input from blurring when the user mouses down
-                  // on a suggestion. Without this, blur fires → onBlur queues a
-                  // setTimeout that clears the popper anchor 100ms later, so
-                  // the just-refreshed (e.g. operator) list never gets shown.
                   onMouseDown={(e) => e.preventDefault()}
                   onClick={() => handleSuggestionClick(suggestion)}
+                  selected={index === highlightedIndex}
+                  onMouseEnter={() => setHighlightedIndex(index)}
                   sx={suggestionItemSx}
                 >
                   <Typography variant="body2" sx={suggestionTextSx}>
